@@ -1,0 +1,43 @@
+version: "3.9"
+
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - postgres
+      - redis
+      - lavalink
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: aetherion
+      POSTGRES_PASSWORD: aetherion
+      POSTGRES_DB: aetherion
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  lavalink:
+    image: ghcr.io/lavalink-devs/lavalink:4
+    restart: unless-stopped
+    environment:
+      - SERVER_PORT=2333
+      - LAVALINK_SERVER_PASSWORD=youshallnotpass
+    ports:
+      - "2333:2333"
+    volumes:
+      - ./lavalink/application.yml:/opt/Lavalink/application.yml
+
+volumes:
+  postgres_data:
