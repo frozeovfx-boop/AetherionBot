@@ -8,6 +8,7 @@ import type { Command } from "../structures/Command.js";
 import { logger } from "../utils/logger.js";
 import { config } from "../config/index.js";
 import { CaseManager } from "../database/CaseManager.js";
+import { EconomyManager } from "../database/EconomyManager.js";
 
 export class AetherionClient extends Client {
   public commands = new Collection<string, Command>();
@@ -15,6 +16,7 @@ export class AetherionClient extends Client {
   public readonly config = config;
   public readonly logger = logger;
   public readonly cases = new CaseManager();
+  public readonly economy = new EconomyManager();
 
   constructor() {
     super({

@@ -2,10 +2,10 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { buildModEmbed } from "../../utils/modlog.js";
 
 export default class SoftbanCommand extends Command {
   constructor() {
@@ -61,18 +61,24 @@ export default class SoftbanCommand extends Command {
       reason: `Softban | ${reason} | Yetkili: ${interaction.user.tag}`,
       deleteMessageSeconds: deleteMessageDays * 24 * 60 * 60,
     });
-
     await interaction.guild.members.unban(target.id, `Softban kaldırıldı | ${interaction.user.tag}`);
 
-    const embed = new EmbedBuilder()
-      .setColor(0xfaa61a)
-      .setTitle("Softban Uygulandı")
-      .addFields(
-        { name: "Kullanıcı", value: `${target.tag} (\`${target.id}\`)`, inline: true },
-        { name: "Yetkili", value: `${interaction.user.tag}`, inline: true },
-        { name: "Sebep", value: reason }
-      )
-      .setTimestamp();
+    const modCase = client.cases.create({
+      guildId: interaction.guild.id,
+      userId: target.id,
+      moderatorId: interaction.user.id,
+      type: "softban",
+      reason,
+    });
+
+    const embed = buildModEmbed({
+      type: "softban",
+      userTag: target.tag,
+      userId: target.id,
+      moderatorTag: interaction.user.tag,
+      reason,
+      caseId: modCase.id,
+    });
 
     await interaction.reply({ embeds: [embed] });
   }

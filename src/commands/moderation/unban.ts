@@ -2,10 +2,10 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { buildModEmbed } from "../../utils/modlog.js";
 
 export default class UnbanCommand extends Command {
   constructor() {
@@ -21,7 +21,7 @@ export default class UnbanCommand extends Command {
         .setName("unban")
         .setDescription("Bir kullanıcının yasağını kaldırır")
         .addStringOption((opt) =>
-          opt.setName("kullanici_id").setDescription("Yasağı kaldırılacak kullanıcının ID'si").setRequired(true)
+          opt.setName("kullanici_id").setDescription("Kullanıcı ID").setRequired(true)
         )
         .addStringOption((opt) =>
           opt.setName("sebep").setDescription("Sebep").setRequired(false)
@@ -49,15 +49,22 @@ export default class UnbanCommand extends Command {
       return;
     }
 
-    const embed = new EmbedBuilder()
-      .setColor(0x57f287)
-      .setTitle("Yasak Kaldırıldı")
-      .addFields(
-        { name: "Kullanıcı ID", value: `\`${userId}\``, inline: true },
-        { name: "Yetkili", value: `${interaction.user.tag}`, inline: true },
-        { name: "Sebep", value: reason }
-      )
-      .setTimestamp();
+    const modCase = client.cases.create({
+      guildId: interaction.guild.id,
+      userId,
+      moderatorId: interaction.user.id,
+      type: "unban",
+      reason,
+    });
+
+    const embed = buildModEmbed({
+      type: "unban",
+      userTag: userId,
+      userId,
+      moderatorTag: interaction.user.tag,
+      reason,
+      caseId: modCase.id,
+    });
 
     await interaction.reply({ embeds: [embed] });
   }

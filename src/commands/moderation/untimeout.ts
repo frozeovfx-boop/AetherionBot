@@ -2,10 +2,10 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { buildModEmbed } from "../../utils/modlog.js";
 
 export default class UntimeoutCommand extends Command {
   constructor() {
@@ -13,7 +13,7 @@ export default class UntimeoutCommand extends Command {
       name: "untimeout",
       description: "Bir kullanıcının timeout'unu kaldırır",
       category: "moderation",
-      cooldown: 5,
+      cooldown: 3,
       guildOnly: true,
       permissions: [PermissionFlagsBits.ModerateMembers],
       clientPermissions: [PermissionFlagsBits.ModerateMembers],
@@ -21,7 +21,7 @@ export default class UntimeoutCommand extends Command {
         .setName("untimeout")
         .setDescription("Bir kullanıcının timeout'unu kaldırır")
         .addUserOption((opt) =>
-          opt.setName("kullanici").setDescription("Timeout'u kaldırılacak kullanıcı").setRequired(true)
+          opt.setName("kullanici").setDescription("Hedef kullanıcı").setRequired(true)
         )
         .addStringOption((opt) =>
           opt.setName("sebep").setDescription("Sebep").setRequired(false)
@@ -38,7 +38,6 @@ export default class UntimeoutCommand extends Command {
     const reason = interaction.options.getString("sebep") ?? "Sebep belirtilmedi";
 
     const member = await interaction.guild.members.fetch(target.id).catch(() => null);
-
     if (!member) {
       await interaction.reply({ content: "Bu kullanıcı sunucuda değil.", ephemeral: true });
       return;
@@ -51,15 +50,22 @@ export default class UntimeoutCommand extends Command {
 
     await member.timeout(null, `${reason} | Yetkili: ${interaction.user.tag}`);
 
-    const embed = new EmbedBuilder()
-      .setColor(0x57f287)
-      .setTitle("Timeout Kaldırıldı")
-      .addFields(
-        { name: "Kullanıcı", value: `${target.tag} (\`${target.id}\`)`, inline: true },
-        { name: "Yetkili", value: `${interaction.user.tag}`, inline: true },
-        { name: "Sebep", value: reason }
-      )
-      .setTimestamp();
+    const modCase = client.cases.create({
+      guildId: interaction.guild.id,
+      userId: target.id,
+      moderatorId: interaction.user.id,
+      type: "untimeout",
+      reason,
+    });
+
+    const embed = buildModEmbed({
+      type: "untimeout",
+      userTag: target.tag,
+      userId: target.id,
+      moderatorTag: interaction.user.tag,
+      reason,
+      caseId: modCase.id,
+    });
 
     await interaction.reply({ embeds: [embed] });
   }
