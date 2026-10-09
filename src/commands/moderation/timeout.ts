@@ -2,10 +2,10 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { buildModEmbed } from "../../utils/modlog.js";
 
 export default class TimeoutCommand extends Command {
   constructor() {
@@ -46,18 +46,12 @@ export default class TimeoutCommand extends Command {
     const minutes = interaction.options.getInteger("sure", true);
     const reason = interaction.options.getString("sebep") ?? "Sebep belirtilmedi";
 
-    if (target.id === interaction.user.id) {
-      await interaction.reply({ content: "Kendine timeout uygulayamazsın.", ephemeral: true });
-      return;
-    }
-
-    if (target.id === client.user?.id) {
-      await interaction.reply({ content: "Bana timeout uygulayamazsın.", ephemeral: true });
+    if (target.id === interaction.user.id || target.id === client.user?.id) {
+      await interaction.reply({ content: "Geçersiz hedef.", ephemeral: true });
       return;
     }
 
     const member = await interaction.guild.members.fetch(target.id).catch(() => null);
-
     if (!member) {
       await interaction.reply({ content: "Bu kullanıcı sunucuda değil.", ephemeral: true });
       return;
@@ -69,19 +63,26 @@ export default class TimeoutCommand extends Command {
     }
 
     const duration = minutes * 60 * 1000;
-
     await member.timeout(duration, `${reason} | Yetkili: ${interaction.user.tag}`);
 
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
-      .setTitle("Timeout Uygulandı")
-      .addFields(
-        { name: "Kullanıcı", value: `${target.tag} (\`${target.id}\`)`, inline: true },
-        { name: "Süre", value: `${minutes} dakika`, inline: true },
-        { name: "Yetkili", value: `${interaction.user.tag}`, inline: true },
-        { name: "Sebep", value: reason }
-      )
-      .setTimestamp();
+    const modCase = client.cases.create({
+      guildId: interaction.guild.id,
+      userId: target.id,
+      moderatorId: interaction.user.id,
+      type: "timeout",
+      reason,
+      duration,
+    });
+
+    const embed = buildModEmbed({
+      type: "timeout",
+      userTag: target.tag,
+      userId: target.id,
+      moderatorTag: interaction.user.tag,
+      reason,
+      duration: `${minutes} dakika`,
+      caseId: modCase.id,
+    });
 
     await interaction.reply({ embeds: [embed] });
   }

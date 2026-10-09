@@ -2,10 +2,10 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { buildModEmbed } from "../../utils/modlog.js";
 
 export default class KickCommand extends Command {
   constructor() {
@@ -24,7 +24,7 @@ export default class KickCommand extends Command {
           opt.setName("kullanici").setDescription("Atılacak kullanıcı").setRequired(true)
         )
         .addStringOption((opt) =>
-          opt.setName("sebep").setDescription("Atılma sebebi").setRequired(false)
+          opt.setName("sebep").setDescription("Sebep").setRequired(false)
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers)
         .toJSON(),
@@ -37,25 +37,19 @@ export default class KickCommand extends Command {
     const target = interaction.options.getUser("kullanici", true);
     const reason = interaction.options.getString("sebep") ?? "Sebep belirtilmedi";
 
-    if (target.id === interaction.user.id) {
-      await interaction.reply({ content: "Kendini atamazsın.", ephemeral: true });
-      return;
-    }
-
-    if (target.id === client.user?.id) {
-      await interaction.reply({ content: "Beni atamazsın.", ephemeral: true });
+    if (target.id === interaction.user.id || target.id === client.user?.id) {
+      await interaction.reply({ content: "Geçersiz hedef.", ephemeral: true });
       return;
     }
 
     const member = await interaction.guild.members.fetch(target.id).catch(() => null);
-
     if (!member) {
-      await interaction.reply({ content: "Bu kullanıcı sunucuda değil.", ephemeral: true });
+      await interaction.reply({ content: "Kullanıcı sunucuda bulunamadı.", ephemeral: true });
       return;
     }
 
     if (!member.kickable) {
-      await interaction.reply({ content: "Bu kullanıcıyı atamıyorum (yetki/rol hiyerarşisi).", ephemeral: true });
+      await interaction.reply({ content: "Bu kullanıcıyı atamıyorum.", ephemeral: true });
       return;
     }
 
@@ -71,15 +65,22 @@ export default class KickCommand extends Command {
 
     await member.kick(`${reason} | Yetkili: ${interaction.user.tag}`);
 
-    const embed = new EmbedBuilder()
-      .setColor(0xfaa61a)
-      .setTitle("Kullanıcı Atıldı")
-      .addFields(
-        { name: "Kullanıcı", value: `${target.tag} (\`${target.id}\`)`, inline: true },
-        { name: "Yetkili", value: `${interaction.user.tag}`, inline: true },
-        { name: "Sebep", value: reason }
-      )
-      .setTimestamp();
+    const modCase = client.cases.create({
+      guildId: interaction.guild.id,
+      userId: target.id,
+      moderatorId: interaction.user.id,
+      type: "kick",
+      reason,
+    });
+
+    const embed = buildModEmbed({
+      type: "kick",
+      userTag: target.tag,
+      userId: target.id,
+      moderatorTag: interaction.user.tag,
+      reason,
+      caseId: modCase.id,
+    });
 
     await interaction.reply({ embeds: [embed] });
   }

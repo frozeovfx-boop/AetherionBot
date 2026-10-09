@@ -2,10 +2,10 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { buildModEmbed } from "../../utils/modlog.js";
 
 export default class BanCommand extends Command {
   constructor() {
@@ -46,24 +46,17 @@ export default class BanCommand extends Command {
     const reason = interaction.options.getString("sebep") ?? "Sebep belirtilmedi";
     const deleteMessageDays = interaction.options.getInteger("mesaj_sil") ?? 0;
 
-    if (target.id === interaction.user.id) {
-      await interaction.reply({ content: "Kendini yasaklayamazsın.", ephemeral: true });
-      return;
-    }
-
-    if (target.id === client.user?.id) {
-      await interaction.reply({ content: "Beni yasaklayamazsın.", ephemeral: true });
+    if (target.id === interaction.user.id || target.id === client.user?.id) {
+      await interaction.reply({ content: "Geçersiz hedef.", ephemeral: true });
       return;
     }
 
     const member = await interaction.guild.members.fetch(target.id).catch(() => null);
-
     if (member) {
       if (!member.bannable) {
         await interaction.reply({ content: "Bu kullanıcıyı yasaklayamıyorum (yetki/rol hiyerarşisi).", ephemeral: true });
         return;
       }
-
       if (
         interaction.member &&
         "roles" in interaction.member &&
@@ -80,15 +73,22 @@ export default class BanCommand extends Command {
       deleteMessageSeconds: deleteMessageDays * 24 * 60 * 60,
     });
 
-    const embed = new EmbedBuilder()
-      .setColor(0xed4245)
-      .setTitle("Kullanıcı Yasaklandı")
-      .addFields(
-        { name: "Kullanıcı", value: `${target.tag} (\`${target.id}\`)`, inline: true },
-        { name: "Yetkili", value: `${interaction.user.tag}`, inline: true },
-        { name: "Sebep", value: reason }
-      )
-      .setTimestamp();
+    const modCase = client.cases.create({
+      guildId: interaction.guild.id,
+      userId: target.id,
+      moderatorId: interaction.user.id,
+      type: "ban",
+      reason,
+    });
+
+    const embed = buildModEmbed({
+      type: "ban",
+      userTag: target.tag,
+      userId: target.id,
+      moderatorTag: interaction.user.tag,
+      reason,
+      caseId: modCase.id,
+    });
 
     await interaction.reply({ embeds: [embed] });
   }
