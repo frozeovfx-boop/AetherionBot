@@ -5,7 +5,7 @@ const envSchema = z.object({
   DISCORD_TOKEN: z.string().min(1),
   DISCORD_CLIENT_ID: z.string().min(1),
   DISCORD_GUILD_ID: z.string().optional(),
-  DATABASE_URL: z.string().min(1),
+  DATABASE_URL: z.string().optional(),
   REDIS_URL: z.string().default("redis://localhost:6379"),
   OWNER_IDS: z.string().default(""),
   PREFIX: z.string().default("!"),
