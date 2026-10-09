@@ -6,6 +6,7 @@ import {
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { buildModEmbed } from "../../utils/modlog.js";
 
 export default class WarnCommand extends Command {
   constructor() {
@@ -46,28 +47,34 @@ export default class WarnCommand extends Command {
       return;
     }
 
-    const embed = new EmbedBuilder()
-      .setColor(0xfee75c)
-      .setTitle("Kullanıcı Uyarıldı")
-      .addFields(
-        { name: "Kullanıcı", value: `${target.tag} (\`${target.id}\`)`, inline: true },
-        { name: "Yetkili", value: `${interaction.user.tag}`, inline: true },
-        { name: "Sebep", value: reason }
-      )
-      .setTimestamp();
+    const modCase = client.cases.create({
+      guildId: interaction.guild.id,
+      userId: target.id,
+      moderatorId: interaction.user.id,
+      type: "warn",
+      reason,
+    });
+
+    const embed = buildModEmbed({
+      type: "warn",
+      userTag: target.tag,
+      userId: target.id,
+      moderatorTag: interaction.user.tag,
+      reason,
+      caseId: modCase.id,
+    });
 
     await interaction.reply({ embeds: [embed] });
 
-    // DM attempt
     try {
       const dmEmbed = new EmbedBuilder()
         .setColor(0xfee75c)
         .setTitle(`Uyarı — ${interaction.guild.name}`)
-        .setDescription(`**Sebep:** ${reason}`)
+        .setDescription(`**Sebep:** ${reason}\n**Case:** #${modCase.id}`)
         .setTimestamp();
       await target.send({ embeds: [dmEmbed] });
     } catch {
-      // User has DMs closed
+      // DMs closed
     }
   }
 }
