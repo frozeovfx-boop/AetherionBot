@@ -13,17 +13,31 @@ async function deploy() {
 
   for (const category of categories) {
     const categoryPath = join(commandsPath, category);
-    const files = await readdir(categoryPath);
+    let files: string[];
+    try {
+      files = await readdir(categoryPath);
+    } catch {
+      continue;
+    }
 
     for (const file of files) {
       if (!file.endsWith(".ts") && !file.endsWith(".js")) continue;
 
-      const filePath = join(categoryPath, file);
-      const commandModule = await import(pathToFileURL(filePath).href);
-      const command: Command = commandModule.default ?? commandModule.command;
+      try {
+        const filePath = join(categoryPath, file);
+        const commandModule = await import(pathToFileURL(filePath).href);
+        const raw = commandModule.default ?? commandModule.command;
+        if (!raw) continue;
 
-      if (command?.data) {
-        commands.push(command.data);
+        // Class export → instantiate; already instance → use as-is
+        const command: Command =
+          typeof raw === "function" ? new (raw as new () => Command)() : raw;
+
+        if (command?.data) {
+          commands.push(command.data);
+        }
+      } catch (err) {
+        logger.warn({ err, file }, `Skipping command file during deploy`);
       }
     }
   }
@@ -38,10 +52,10 @@ async function deploy() {
         Routes.applicationGuildCommands(config.DISCORD_CLIENT_ID, config.DISCORD_GUILD_ID),
         { body: commands }
       );
-      logger.info(`Successfully reloaded guild commands.`);
+      logger.info(`Successfully reloaded ${commands.length} guild commands.`);
     } else {
       await rest.put(Routes.applicationCommands(config.DISCORD_CLIENT_ID), { body: commands });
-      logger.info(`Successfully reloaded global commands.`);
+      logger.info(`Successfully reloaded ${commands.length} global commands.`);
     }
   } catch (error) {
     logger.error(error, "Failed to deploy commands");

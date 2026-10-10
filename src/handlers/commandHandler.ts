@@ -13,22 +13,35 @@ export async function loadCommands(client: AetherionClient): Promise<void> {
 
   for (const category of categories) {
     const categoryPath = join(commandsPath, category);
-    const files = await readdir(categoryPath);
+    let files: string[];
+    try {
+      files = await readdir(categoryPath);
+    } catch {
+      continue;
+    }
 
     for (const file of files) {
       if (!file.endsWith(".ts") && !file.endsWith(".js")) continue;
 
-      const filePath = join(categoryPath, file);
-      const commandModule = await import(pathToFileURL(filePath).href);
-      const command: Command = commandModule.default ?? commandModule.command;
+      try {
+        const filePath = join(categoryPath, file);
+        const commandModule = await import(pathToFileURL(filePath).href);
+        const raw = commandModule.default ?? commandModule.command;
+        if (!raw) continue;
 
-      if (!command?.name) {
-        logger.warn(`Skipping invalid command file: ${file}`);
-        continue;
+        const command: Command =
+          typeof raw === "function" ? new (raw as new () => Command)() : raw;
+
+        if (!command?.name) {
+          logger.warn(`Skipping invalid command file: ${file}`);
+          continue;
+        }
+
+        client.commands.set(command.name, command);
+        loaded++;
+      } catch (err) {
+        logger.warn({ err, file }, `Failed to load command`);
       }
-
-      client.commands.set(command.name, command);
-      loaded++;
     }
   }
 
