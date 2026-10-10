@@ -36,7 +36,10 @@ export default class InteractionCreateEvent extends Event<typeof Events.Interact
     if (!interaction.isChatInputCommand()) return;
 
     const command = client.commands.get(interaction.commandName);
-    if (!command) return;
+    if (!command) {
+      await interaction.reply({ content: "Bu komut yüklenemedi.", ephemeral: true }).catch(() => null);
+      return;
+    }
 
     if (!client.cooldowns.has(command.name)) {
       client.cooldowns.set(command.name, new Collection());
