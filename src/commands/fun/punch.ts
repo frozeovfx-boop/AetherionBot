@@ -27,7 +27,7 @@ export default class PunchCommand extends Command {
     const target = interaction.options.getUser("kullanici", true);
     const embed = new EmbedBuilder()
       .setColor(0xeb459e)
-      .setDescription(`👊 **${{interaction.user.username}}**, **${{target.username}}** kullanıcısına yumruk attı!`)
+      .setDescription(`👊 **${interaction.user.username}}**, **${target.username}}** kullanıcısına yumruk attı!`)
       .setTimestamp();
     await interaction.reply({ embeds: [embed] });
   }

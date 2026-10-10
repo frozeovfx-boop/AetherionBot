@@ -23,7 +23,7 @@ export default class FacepalmCommand extends Command {
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const embed = new EmbedBuilder()
       .setColor(0xeb459e)
-      .setDescription(`🤦 **${{interaction.user.username}}** yüzünü kapattı.`)
+      .setDescription(`🤦 **${interaction.user.username}}** yüzünü kapattı.`)
       .setTimestamp();
     await interaction.reply({ embeds: [embed] });
   }

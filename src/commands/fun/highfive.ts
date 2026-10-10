@@ -27,7 +27,7 @@ export default class HighfiveCommand extends Command {
     const target = interaction.options.getUser("kullanici", true);
     const embed = new EmbedBuilder()
       .setColor(0xeb459e)
-      .setDescription(`🙌 **${{interaction.user.username}}** ile **${{target.username}}** çak bir beşlik yaptı!`)
+      .setDescription(`🙌 **${interaction.user.username}}** ile **${target.username}}** çak bir beşlik yaptı!`)
       .setTimestamp();
     await interaction.reply({ embeds: [embed] });
   }

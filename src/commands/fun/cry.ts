@@ -23,7 +23,7 @@ export default class CryCommand extends Command {
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const embed = new EmbedBuilder()
       .setColor(0xeb459e)
-      .setDescription(`😢 **${{interaction.user.username}}** ağlıyor...`)
+      .setDescription(`😢 **${interaction.user.username}}** ağlıyor...`)
       .setTimestamp();
     await interaction.reply({ embeds: [embed] });
   }

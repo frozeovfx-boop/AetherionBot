@@ -27,7 +27,7 @@ export default class TickleCommand extends Command {
     const target = interaction.options.getUser("kullanici", true);
     const embed = new EmbedBuilder()
       .setColor(0xeb459e)
-      .setDescription(`😆 **${{interaction.user.username}}**, **${{target.username}}** kullanıcısını gıdıkladı!`)
+      .setDescription(`😆 **${interaction.user.username}}**, **${target.username}}** kullanıcısını gıdıkladı!`)
       .setTimestamp();
     await interaction.reply({ embeds: [embed] });
   }

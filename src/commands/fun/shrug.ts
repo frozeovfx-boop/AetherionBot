@@ -23,7 +23,7 @@ export default class ShrugCommand extends Command {
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const embed = new EmbedBuilder()
       .setColor(0xeb459e)
-      .setDescription(`🤷 **${{interaction.user.username}}** omuz silkti.`)
+      .setDescription(`🤷 **${interaction.user.username}}** omuz silkti.`)
       .setTimestamp();
     await interaction.reply({ embeds: [embed] });
   }

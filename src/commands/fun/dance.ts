@@ -23,7 +23,7 @@ export default class DanceCommand extends Command {
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const embed = new EmbedBuilder()
       .setColor(0xeb459e)
-      .setDescription(`💃 **${{interaction.user.username}}** dans ediyor!`)
+      .setDescription(`💃 **${interaction.user.username}}** dans ediyor!`)
       .setTimestamp();
     await interaction.reply({ embeds: [embed] });
   }

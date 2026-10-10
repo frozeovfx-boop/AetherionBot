@@ -27,7 +27,7 @@ export default class PokeCommand extends Command {
     const target = interaction.options.getUser("kullanici", true);
     const embed = new EmbedBuilder()
       .setColor(0xeb459e)
-      .setDescription(`👉 **${{interaction.user.username}}**, **${{target.username}}** kullanıcısını dürttü!`)
+      .setDescription(`👉 **${interaction.user.username}}**, **${target.username}}** kullanıcısını dürttü!`)
       .setTimestamp();
     await interaction.reply({ embeds: [embed] });
   }
