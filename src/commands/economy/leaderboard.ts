@@ -24,17 +24,28 @@ export default class LeaderboardCommand extends Command {
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) return;
 
-    // In-memory: collect all profiles for this guild from the manager
-    // EconomyManager doesn't expose all yet — show message for now with top known via members sample
-    // For proper LB we need a list method
+    const top = client.economy.getLeaderboard(interaction.guild.id, 10);
+
+    if (top.length === 0) {
+      await interaction.reply({ content: "Henüz ekonomi verisi yok. `/daily` veya `/work` dene.", ephemeral: true });
+      return;
+    }
+
+    const medals = ["🥇", "🥈", "🥉"];
+    const lines = await Promise.all(
+      top.map(async (p, i) => {
+        const user = await client.users.fetch(p.userId).catch(() => null);
+        const name = user?.username ?? p.userId;
+        const total = p.wallet + p.bank;
+        const medal = medals[i] ?? `\`${i + 1}.\``;
+        return `${medal} **${name}** — ${total.toLocaleString()} 💵`;
+      })
+    );
+
     const embed = new EmbedBuilder()
       .setColor(0xfee75c)
       .setTitle("🏆 Zenginlik Sıralaması")
-      .setDescription(
-        "Sıralama sistemi aktif.\n" +
-          "Şu an veriler bellek üzerinde tutuluyor; Postgres bağlandığında kalıcı global leaderboard gelecek.\n\n" +
-          "`/balance` ile kendi bakiyeni görebilirsin."
-      )
+      .setDescription(lines.join("\n"))
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });

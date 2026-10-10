@@ -15,7 +15,7 @@ export interface EconomyProfile {
  * In-memory economy store. DB-ready interface.
  */
 export class EconomyManager {
-  private profiles = new Collection<string, EconomyProfile>(); // key: guildId:userId
+  private profiles = new Collection<string, EconomyProfile>();
 
   private key(guildId: string, userId: string): string {
     return `${guildId}:${userId}`;
@@ -69,7 +69,10 @@ export class EconomyManager {
     return true;
   }
 
-  public addXp(guildId: string, userId: string, amount: number): { profile: EconomyProfile; leveledUp: boolean } {
+  public addXp(guildId: string, userId: string, amount: number): {
+    profile: EconomyProfile;
+    leveledUp: boolean;
+  } {
     const p = this.get(guildId, userId);
     p.xp += amount;
     let leveledUp = false;
@@ -80,5 +83,12 @@ export class EconomyManager {
       leveledUp = true;
     }
     return { profile: p, leveledUp };
+  }
+
+  public getLeaderboard(guildId: string, limit = 10): EconomyProfile[] {
+    return [...this.profiles.values()]
+      .filter((p) => p.guildId === guildId)
+      .sort((a, b) => b.wallet + b.bank - (a.wallet + a.bank))
+      .slice(0, limit);
   }
 }
