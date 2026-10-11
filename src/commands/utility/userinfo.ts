@@ -1,23 +1,23 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, code, divider } from "../../utils/embeds.js";
 
-export default class UserInfoCommand extends Command {
+export default class UserinfoCommand extends Command {
   constructor() {
     super({
       name: "userinfo",
-      description: "Kullanıcı bilgilerini gösterir",
+      description: "Kullanıcı bilgileri",
       category: "utility",
-      cooldown: 5,
+      cooldown: 3,
       data: new SlashCommandBuilder()
         .setName("userinfo")
-        .setDescription("Kullanıcı bilgilerini gösterir")
+        .setDescription("Kullanıcı bilgileri")
         .addUserOption((opt) =>
-          opt.setName("kullanici").setDescription("Bilgisi alınacak kullanıcı").setRequired(false)
+          opt.setName("kullanici").setDescription("Hedef").setRequired(false)
         )
         .toJSON(),
     });
@@ -29,32 +29,32 @@ export default class UserInfoCommand extends Command {
       ? await interaction.guild.members.fetch(user.id).catch(() => null)
       : null;
 
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
-      .setTitle(user.tag)
-      .setThumbnail(user.displayAvatarURL({ size: 256 }))
-      .addFields(
-        { name: "ID", value: `\`${user.id}\``, inline: true },
-        { name: "Bot", value: user.bot ? "Evet" : "Hayır", inline: true },
-        { name: "Hesap Oluşturma", value: `<t:${Math.floor(user.createdTimestamp / 1000)}:R>`, inline: true }
-      )
-      .setTimestamp();
+    const roles =
+      member?.roles.cache
+        .filter((r) => r.id !== interaction.guild!.id)
+        .sort((a, b) => b.position - a.position)
+        .map((r) => r.toString())
+        .slice(0, 8)
+        .join(" ") || "—";
 
-    if (member) {
-      embed.addFields(
-        { name: "Sunucuya Katılma", value: member.joinedTimestamp ? `<t:${Math.floor(member.joinedTimestamp / 1000)}:R>` : "Bilinmiyor", inline: true },
-        { name: "Takma Ad", value: member.nickname ?? "Yok", inline: true },
-        {
-          name: "Roller",
-          value: member.roles.cache
-            .filter((r) => r.id !== interaction.guild!.id)
-            .sort((a, b) => b.position - a.position)
-            .map((r) => r.toString())
-            .slice(0, 15)
-            .join(", ") || "Yok",
-        }
+    const embed = baseEmbed(Theme.primary)
+      .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL({ size: 128 }) })
+      .setThumbnail(user.displayAvatarURL({ size: 256 }))
+      .setDescription(
+        [
+          divider(),
+          `**ID**           ${code(user.id)}`,
+          `**Hesap**        <t:${Math.floor(user.createdTimestamp / 1000)}:R>`,
+          member
+            ? `**Katılma**      <t:${Math.floor(member.joinedTimestamp! / 1000)}:R>`
+            : null,
+          member?.nickname ? `**Takma ad**     ${code(member.nickname)}` : null,
+          divider(),
+          member ? `**Roller**\n${roles}` : null,
+        ]
+          .filter(Boolean)
+          .join("\n")
       );
-    }
 
     await interaction.reply({ embeds: [embed] });
   }

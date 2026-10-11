@@ -1,51 +1,35 @@
-import { EmbedBuilder, TextChannel, ColorResolvable } from "discord.js";
-import type { AetherionClient } from "../client/AetherionClient.js";
+import { EmbedBuilder, ColorResolvable } from "discord.js";
 import type { CaseType } from "../types/moderation.js";
+import { Theme, baseEmbed, code, divider } from "./embeds.js";
 
 const COLORS: Record<CaseType, ColorResolvable> = {
-  ban: 0xed4245,
-  softban: 0xfaa61a,
-  kick: 0xed4245,
-  timeout: 0xfee75c,
-  untimeout: 0x57f287,
-  unban: 0x57f287,
-  warn: 0xfee75c,
-  mute: 0xfee75c,
-  unmute: 0x57f287,
-  other: 0x5865f2,
+  ban: Theme.danger,
+  softban: Theme.warning,
+  kick: Theme.danger,
+  timeout: Theme.warning,
+  untimeout: Theme.success,
+  unban: Theme.success,
+  warn: Theme.warning,
+  mute: Theme.warning,
+  unmute: Theme.success,
+  other: Theme.info,
 };
 
 const TITLES: Record<CaseType, string> = {
-  ban: "Ban",
+  ban: "Yasaklama",
   softban: "Softban",
-  kick: "Kick",
+  kick: "Atma",
   timeout: "Timeout",
   untimeout: "Timeout Kaldırıldı",
-  unban: "Unban",
-  warn: "Warn",
-  mute: "Mute",
-  unmute: "Unmute",
-  other: "Moderation Action",
+  unban: "Yasak Kaldırıldı",
+  warn: "Uyarı",
+  mute: "Susturma",
+  unmute: "Susturma Kaldırıldı",
+  other: "Moderasyon",
 };
 
-export async function sendModLog(
-  client: AetherionClient,
-  guildId: string,
-  data: {
-    type: CaseType;
-    userTag: string;
-    userId: string;
-    moderatorTag: string;
-    reason: string;
-    duration?: string;
-    caseId?: number;
-  }
-): Promise<void> {
-  // Placeholder: when DB + config is ready, fetch modlog channel from guild config
-  // For now this is a no-op until modlog channel is configured
-  void client;
-  void guildId;
-  void data;
+export async function sendModLog(): Promise<void> {
+  // wired when modlog channel config exists
 }
 
 export function buildModEmbed(data: {
@@ -57,22 +41,24 @@ export function buildModEmbed(data: {
   duration?: string;
   caseId?: number;
 }): EmbedBuilder {
-  const embed = new EmbedBuilder()
-    .setColor(COLORS[data.type])
-    .setTitle(TITLES[data.type])
-    .addFields(
-      { name: "Kullanıcı", value: `${data.userTag} (\`${data.userId}\`)`, inline: true },
-      { name: "Yetkili", value: data.moderatorTag, inline: true },
-      { name: "Sebep", value: data.reason }
-    )
-    .setTimestamp();
+  const lines = [
+    divider(),
+    `**Kullanıcı**   ${data.userTag}`,
+    `**ID**          ${code(data.userId)}`,
+    `**Yetkili**     ${data.moderatorTag}`,
+    data.duration ? `**Süre**        ${code(data.duration)}` : null,
+    `**Sebep**       ${data.reason}`,
+    divider(),
+  ]
+    .filter(Boolean)
+    .join("\n");
 
-  if (data.duration) {
-    embed.addFields({ name: "Süre", value: data.duration, inline: true });
-  }
+  const embed = baseEmbed(COLORS[data.type])
+    .setTitle(`🛡  ${TITLES[data.type]}`)
+    .setDescription(lines);
 
   if (data.caseId) {
-    embed.setFooter({ text: `Case #${data.caseId}` });
+    embed.setFooter({ text: `Case #${data.caseId} · Aetherion` });
   }
 
   return embed;

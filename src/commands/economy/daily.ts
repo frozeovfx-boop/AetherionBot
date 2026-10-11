@@ -1,10 +1,10 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, code, divider } from "../../utils/embeds.js";
 
 const COOLDOWN = 24 * 60 * 60 * 1000;
 const REWARD = 500;
@@ -13,13 +13,13 @@ export default class DailyCommand extends Command {
   constructor() {
     super({
       name: "daily",
-      description: "Günlük ödülünü al",
+      description: "Günlük ödül",
       category: "economy",
       cooldown: 3,
       guildOnly: true,
       data: new SlashCommandBuilder()
         .setName("daily")
-        .setDescription("Günlük ödülünü al")
+        .setDescription("Günlük ödül")
         .toJSON(),
     });
   }
@@ -34,21 +34,27 @@ export default class DailyCommand extends Command {
       const remaining = COOLDOWN - (now - profile.lastDaily);
       const hours = Math.floor(remaining / 3_600_000);
       const mins = Math.floor((remaining % 3_600_000) / 60_000);
-      await interaction.reply({
-        content: `Günlük ödülünü zaten aldın. **${hours}s ${mins}dk** sonra tekrar dene.`,
-        ephemeral: true,
-      });
+      const embed = baseEmbed(Theme.warning)
+        .setTitle("⬡ Daily")
+        .setDescription(`Çok erken.\nTekrar: **${hours}s ${mins}dk** sonra`);
+      await interaction.reply({ embeds: [embed], ephemeral: true });
       return;
     }
 
     profile.lastDaily = now;
     client.economy.addWallet(interaction.guild.id, interaction.user.id, REWARD);
+    const p = client.economy.get(interaction.guild.id, interaction.user.id);
 
-    const embed = new EmbedBuilder()
-      .setColor(0xfee75c)
-      .setTitle("Daily Ödül")
-      .setDescription(`**+${REWARD.toLocaleString()}** 💵 cüzdanına eklendi.`)
-      .setTimestamp();
+    const embed = baseEmbed(Theme.economy)
+      .setTitle("⬡ Daily Ödül")
+      .setDescription(
+        [
+          divider(),
+          `**+${REWARD.toLocaleString()}** 💵 cüzdanına eklendi`,
+          `Yeni bakiye  ${code(p.wallet.toLocaleString())}`,
+          divider(),
+        ].join("\n")
+      );
 
     await interaction.reply({ embeds: [embed] });
   }

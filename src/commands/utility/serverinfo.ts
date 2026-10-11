@@ -1,52 +1,51 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
   ChannelType,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, code, divider } from "../../utils/embeds.js";
 
-export default class ServerInfoCommand extends Command {
+export default class ServerinfoCommand extends Command {
   constructor() {
     super({
       name: "serverinfo",
-      description: "Sunucu bilgilerini gösterir",
+      description: "Sunucu bilgileri",
       category: "utility",
       cooldown: 5,
       guildOnly: true,
       data: new SlashCommandBuilder()
         .setName("serverinfo")
-        .setDescription("Sunucu bilgilerini gösterir")
+        .setDescription("Sunucu bilgileri")
         .toJSON(),
     });
   }
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
-    if (!interaction.guild) return;
+    const g = interaction.guild!;
+    const owner = await g.fetchOwner().catch(() => null);
+    const text = g.channels.cache.filter((c) => c.type === ChannelType.GuildText).size;
+    const voice = g.channels.cache.filter((c) => c.type === ChannelType.GuildVoice).size;
 
-    const guild = interaction.guild;
-    const owner = await guild.fetchOwner();
-
-    const textChannels = guild.channels.cache.filter((c) => c.type === ChannelType.GuildText).size;
-    const voiceChannels = guild.channels.cache.filter((c) => c.type === ChannelType.GuildVoice).size;
-    const categories = guild.channels.cache.filter((c) => c.type === ChannelType.GuildCategory).size;
-
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
-      .setTitle(guild.name)
-      .setThumbnail(guild.iconURL({ size: 256 }))
-      .addFields(
-        { name: "Sahip", value: `${owner.user.tag}`, inline: true },
-        { name: "ID", value: `\`${guild.id}\``, inline: true },
-        { name: "Oluşturulma", value: `<t:${Math.floor(guild.createdTimestamp / 1000)}:R>`, inline: true },
-        { name: "Üyeler", value: `${guild.memberCount}`, inline: true },
-        { name: "Roller", value: `${guild.roles.cache.size}`, inline: true },
-        { name: "Emojiler", value: `${guild.emojis.cache.size}`, inline: true },
-        { name: "Kanallar", value: `Yazı: ${textChannels} | Ses: ${voiceChannels} | Kategori: ${categories}`, inline: false },
-        { name: "Boost", value: `Seviye ${guild.premiumTier} (${guild.premiumSubscriptionCount ?? 0} boost)`, inline: true }
+    const embed = baseEmbed(Theme.primary)
+      .setTitle(`◈  ${g.name}`)
+      .setThumbnail(g.iconURL({ size: 256 }) ?? null)
+      .setDescription(
+        [
+          divider(),
+          `**ID**          ${code(g.id)}`,
+          `**Sahip**       ${owner?.user.tag ?? "—"}`,
+          `**Oluşturulma** <t:${Math.floor(g.createdTimestamp / 1000)}:R>`,
+          divider(),
+          `**Üyeler**      ${code(g.memberCount.toLocaleString())}`,
+          `**Roller**      ${code(g.roles.cache.size)}`,
+          `**Kanallar**    ${code(text)} metin · ${code(voice)} ses`,
+          `**Boost**       ${code(`Seviye ${g.premiumTier}`)} · ${code(g.premiumSubscriptionCount ?? 0)} boost`,
+          divider(),
+        ].join("\n")
       )
-      .setTimestamp();
+      .setImage(g.bannerURL({ size: 1024 }) ?? null);
 
     await interaction.reply({ embeds: [embed] });
   }
