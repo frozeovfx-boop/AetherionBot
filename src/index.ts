@@ -10,9 +10,11 @@ async function main() {
   try {
     await client.economy.init();
     await client.cases.init();
+    await client.inventory.init();
     await client.settings.init(client.config.PREFIX);
     bindGuildSettings(client.settings);
-    logger.info("Persistent stores loaded (economy, cases, guilds)");
+    await client.music.init();
+    logger.info("Stores ready: economy · cases · inventory · guilds");
 
     await loadEvents(client);
     await loadCommands(client);

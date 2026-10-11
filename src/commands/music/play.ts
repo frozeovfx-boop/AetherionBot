@@ -39,14 +39,18 @@ export default class PlayCommand extends Command {
       return;
     }
 
+    await interaction.deferReply();
+
     const query = interaction.options.getString("sarki", true);
-    const track = {
-      title: query.length > 80 ? query.slice(0, 77) + "..." : query,
-      url: query.startsWith("http") ? query : `search:${query}`,
-      duration: 0,
-      requesterId: interaction.user.id,
-      requesterTag: interaction.user.tag,
-    };
+    const resolved = await client.music.resolve(query, interaction.user.id, interaction.user.tag);
+    const track = resolved[0];
+
+    if (!track) {
+      await interaction.editReply({
+        embeds: [baseEmbed(Theme.danger).setDescription("Parça bulunamadı.")],
+      });
+      return;
+    }
 
     const queue = client.music.ensureQueue(
       interaction.guild.id,
@@ -62,6 +66,10 @@ export default class PlayCommand extends Command {
       queue.tracks.push(track);
     }
 
+    const statusLine = client.music.lavalinkReady
+      ? "Lavalink · metadata aktif"
+      : "Lavalink offline · kuyruk only (ses için Lavalink sunucusu gerekli)";
+
     const embed = baseEmbed(Theme.music)
       .setAuthor({ name: "MUSIC" })
       .setTitle(isFirst ? "Çalıyor" : "Kuyruğa Eklendi")
@@ -69,14 +77,20 @@ export default class PlayCommand extends Command {
         [
           line(),
           kv("Parça", track.title),
+          track.author ? kv("Sanatçı", track.author) : null,
+          kv("Süre", client.music.formatDuration(track.duration)),
           kv("Kanal", voice.name),
           kv("Sıra", isFirst ? "Şimdi" : code(`#${queue.tracks.length}`)),
           line(),
-          "*Lavalink bağlı değil — kuyruk aktif, ses yok.*",
-        ].join("\n")
+          `*${statusLine}*`,
+        ]
+          .filter(Boolean)
+          .join("\n")
       )
       .setFooter({ text: `İsteyen · ${interaction.user.tag}` });
 
-    await interaction.reply({ embeds: [embed] });
+    if (track.artworkUrl) embed.setThumbnail(track.artworkUrl);
+
+    await interaction.editReply({ embeds: [embed] });
   }
 }

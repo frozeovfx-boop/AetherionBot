@@ -1,14 +1,11 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  Collection,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
 import { SHOP_ITEMS } from "./shop.js";
 import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
-
-export const inventories = new Collection<string, string[]>();
 
 export default class BuyCommand extends Command {
   constructor() {
@@ -48,10 +45,7 @@ export default class BuyCommand extends Command {
       return;
     }
 
-    const key = `${interaction.guild.id}:${interaction.user.id}`;
-    const inv = inventories.get(key) ?? [];
-    inv.push(item.id);
-    inventories.set(key, inv);
+    client.inventory.add(interaction.guild.id, interaction.user.id, item.id);
 
     const embed = baseEmbed(Theme.success)
       .setAuthor({ name: "ECONOMY" })

@@ -5,8 +5,7 @@ import {
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
 import { SHOP_ITEMS } from "./shop.js";
-import { inventories } from "./buy.js";
-import { Theme, baseEmbed, line, code } from "../../utils/embeds.js";
+import { Theme, baseEmbed, line } from "../../utils/embeds.js";
 
 export default class InventoryCommand extends Command {
   constructor() {
@@ -28,19 +27,15 @@ export default class InventoryCommand extends Command {
     if (!interaction.guild) return;
 
     const user = interaction.options.getUser("kullanici") ?? interaction.user;
-    const key = `${interaction.guild.id}:${user.id}`;
-    const inv = inventories.get(key) ?? [];
+    const counts = client.inventory.counts(interaction.guild.id, user.id);
 
-    if (inv.length === 0) {
+    if (counts.size === 0) {
       await interaction.reply({
         embeds: [baseEmbed(Theme.mute).setDescription("Envanter boş.")],
         ephemeral: true,
       });
       return;
     }
-
-    const counts = new Map<string, number>();
-    for (const id of inv) counts.set(id, (counts.get(id) ?? 0) + 1);
 
     const rows = [...counts.entries()].map(([id, n]) => {
       const item = SHOP_ITEMS.find((i) => i.id === id);

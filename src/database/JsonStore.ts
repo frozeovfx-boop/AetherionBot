@@ -1,18 +1,24 @@
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
 
 /**
- * Simple JSON file persistence.
- * Works on any host (bot-hosting, Railway, VPS) without Postgres.
- * Swap to Postgres later without touching command code.
+ * Atomic, debounced JSON file store.
+ * - Debounce batches rapid writes
+ * - Atomic rename avoids half-written files on crash
  */
 export class JsonStore<T> {
   private filePath: string;
-  private writeQueue: Promise<void> = Promise.resolve();
+  private tmpPath: string;
+  private writeTimer: ReturnType<typeof setTimeout> | null = null;
+  private pending: T | null = null;
+  private flushPromise: Promise<void> = Promise.resolve();
+  private readonly debounceMs: number;
 
-  constructor(filename: string) {
+  constructor(filename: string, debounceMs = 400) {
     this.filePath = join(process.cwd(), "data", filename);
+    this.tmpPath = `${this.filePath}.tmp`;
+    this.debounceMs = debounceMs;
   }
 
   public async load(fallback: T): Promise<T> {
@@ -25,16 +31,32 @@ export class JsonStore<T> {
     }
   }
 
+  /** Schedule a save (debounced). Safe to call on every mutation. */
   public save(data: T): void {
-    // serialize writes so concurrent updates don't corrupt the file
-    this.writeQueue = this.writeQueue.then(async () => {
+    this.pending = data;
+    if (this.writeTimer) clearTimeout(this.writeTimer);
+    this.writeTimer = setTimeout(() => {
+      this.writeTimer = null;
+      void this.flush();
+    }, this.debounceMs);
+  }
+
+  /** Force immediate write of latest pending data */
+  public async flush(): Promise<void> {
+    if (this.pending === null) return;
+    const data = this.pending;
+    this.pending = null;
+    this.flushPromise = this.flushPromise.then(async () => {
       try {
         const dir = join(process.cwd(), "data");
         if (!existsSync(dir)) await mkdir(dir, { recursive: true });
-        await writeFile(this.filePath, JSON.stringify(data, null, 0), "utf8");
+        const json = JSON.stringify(data);
+        await writeFile(this.tmpPath, json, "utf8");
+        await rename(this.tmpPath, this.filePath);
       } catch (err) {
-        console.error(`[JsonStore] failed to save ${this.filePath}:`, err);
+        console.error(`[JsonStore] save failed ${this.filePath}:`, err);
       }
     });
+    await this.flushPromise;
   }
 }
