@@ -1,30 +1,27 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
+  Collection,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
 import { SHOP_ITEMS } from "./shop.js";
-import { Collection } from "discord.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
-/** guildId:userId -> item ids */
 export const inventories = new Collection<string, string[]>();
 
 export default class BuyCommand extends Command {
   constructor() {
     super({
       name: "buy",
-      description: "Mağazadan ürün satın al",
+      description: "Mağazadan ürün al",
       category: "economy",
       cooldown: 3,
       guildOnly: true,
       data: new SlashCommandBuilder()
         .setName("buy")
-        .setDescription("Mağazadan ürün satın al")
-        .addStringOption((opt) =>
-          opt.setName("urun").setDescription("Ürün id (shop'tan)").setRequired(true)
-        )
+        .setDescription("Mağazadan ürün al")
+        .addStringOption((o) => o.setName("urun").setDescription("Ürün id").setRequired(true))
         .toJSON(),
     });
   }
@@ -36,12 +33,18 @@ export default class BuyCommand extends Command {
     const item = SHOP_ITEMS.find((i) => i.id === itemId);
 
     if (!item) {
-      await interaction.reply({ content: "Ürün bulunamadı. `/shop` ile listeye bak.", ephemeral: true });
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.warning).setDescription(`Ürün yok. ${code("/shop")} ile bak.`)],
+        ephemeral: true,
+      });
       return;
     }
 
     if (!client.economy.removeWallet(interaction.guild.id, interaction.user.id, item.price)) {
-      await interaction.reply({ content: "Yeterli paran yok.", ephemeral: true });
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.danger).setDescription("Yeterli paran yok.")],
+        ephemeral: true,
+      });
       return;
     }
 
@@ -50,11 +53,17 @@ export default class BuyCommand extends Command {
     inv.push(item.id);
     inventories.set(key, inv);
 
-    const embed = new EmbedBuilder()
-      .setColor(0x57f287)
+    const embed = baseEmbed(Theme.success)
+      .setAuthor({ name: "ECONOMY" })
       .setTitle("Satın Alındı")
-      .setDescription(`**${item.name}** satın aldın (−${item.price.toLocaleString()} 💵)`)
-      .setTimestamp();
+      .setDescription(
+        [
+          line(),
+          kv("Ürün", item.name),
+          kv("Fiyat", `−${item.price.toLocaleString()} 💵`),
+          line(),
+        ].join("\n")
+      );
 
     await interaction.reply({ embeds: [embed] });
   }

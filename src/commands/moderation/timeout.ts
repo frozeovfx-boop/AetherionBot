@@ -5,35 +5,26 @@ import {
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
-import { buildModEmbed } from "../../utils/modlog.js";
+import { Theme, baseEmbed, line, code, kv } from "../../utils/embeds.js";
 
 export default class TimeoutCommand extends Command {
   constructor() {
     super({
       name: "timeout",
-      description: "Bir kullanıcıya timeout uygular (mute)",
+      description: "Kullanıcıya timeout uygular",
       category: "moderation",
-      cooldown: 5,
+      cooldown: 3,
       guildOnly: true,
       permissions: [PermissionFlagsBits.ModerateMembers],
       clientPermissions: [PermissionFlagsBits.ModerateMembers],
       data: new SlashCommandBuilder()
         .setName("timeout")
-        .setDescription("Bir kullanıcıya timeout uygular")
-        .addUserOption((opt) =>
-          opt.setName("kullanici").setDescription("Timeout uygulanacak kullanıcı").setRequired(true)
+        .setDescription("Kullanıcıya timeout uygular")
+        .addUserOption((o) => o.setName("kullanici").setDescription("Hedef").setRequired(true))
+        .addIntegerOption((o) =>
+          o.setName("dakika").setDescription("Süre (dakika)").setRequired(true).setMinValue(1).setMaxValue(40320)
         )
-        .addIntegerOption((opt) =>
-          opt
-            .setName("sure")
-            .setDescription("Süre (dakika)")
-            .setRequired(true)
-            .setMinValue(1)
-            .setMaxValue(40320)
-        )
-        .addStringOption((opt) =>
-          opt.setName("sebep").setDescription("Sebep").setRequired(false)
-        )
+        .addStringOption((o) => o.setName("sebep").setDescription("Sebep").setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
         .toJSON(),
     });
@@ -43,27 +34,20 @@ export default class TimeoutCommand extends Command {
     if (!interaction.guild) return;
 
     const target = interaction.options.getUser("kullanici", true);
-    const minutes = interaction.options.getInteger("sure", true);
-    const reason = interaction.options.getString("sebep") ?? "Sebep belirtilmedi";
-
-    if (target.id === interaction.user.id || target.id === client.user?.id) {
-      await interaction.reply({ content: "Geçersiz hedef.", ephemeral: true });
-      return;
-    }
-
+    const minutes = interaction.options.getInteger("dakika", true);
+    const reason = interaction.options.getString("sebep") ?? "Belirtilmedi";
     const member = await interaction.guild.members.fetch(target.id).catch(() => null);
-    if (!member) {
-      await interaction.reply({ content: "Bu kullanıcı sunucuda değil.", ephemeral: true });
-      return;
-    }
 
-    if (!member.moderatable) {
-      await interaction.reply({ content: "Bu kullanıcıya timeout uygulayamıyorum.", ephemeral: true });
+    if (!member?.moderatable) {
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.danger).setDescription("Bu kullanıcıya timeout uygulanamaz.")],
+        ephemeral: true,
+      });
       return;
     }
 
     const duration = minutes * 60 * 1000;
-    await member.timeout(duration, `${reason} | Yetkili: ${interaction.user.tag}`);
+    await member.timeout(duration, `${reason} · ${interaction.user.tag}`);
 
     const modCase = client.cases.create({
       guildId: interaction.guild.id,
@@ -74,15 +58,22 @@ export default class TimeoutCommand extends Command {
       duration,
     });
 
-    const embed = buildModEmbed({
-      type: "timeout",
-      userTag: target.tag,
-      userId: target.id,
-      moderatorTag: interaction.user.tag,
-      reason,
-      duration: `${minutes} dakika`,
-      caseId: modCase.id,
-    });
+    const embed = baseEmbed(Theme.warning)
+      .setAuthor({ name: "MODERASYON", iconURL: interaction.guild.iconURL({ size: 64 }) ?? undefined })
+      .setTitle("Timeout")
+      .setThumbnail(target.displayAvatarURL({ size: 256 }))
+      .setDescription(
+        [
+          line(),
+          kv("Kullanıcı", target.tag),
+          kv("ID", code(target.id)),
+          kv("Yetkili", interaction.user.tag),
+          kv("Süre", `${minutes} dakika`),
+          kv("Sebep", reason),
+          line(),
+        ].join("\n")
+      )
+      .setFooter({ text: `Case #${modCase.id} · Aetherion` });
 
     await interaction.reply({ embeds: [embed] });
   }
