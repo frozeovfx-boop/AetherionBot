@@ -1,5 +1,11 @@
-import { EmbedBuilder, ColorResolvable } from "discord.js";
+import {
+  EmbedBuilder,
+  ColorResolvable,
+  TextChannel,
+  Client,
+} from "discord.js";
 import type { CaseType } from "../types/moderation.js";
+import type { AetherionClient } from "../client/AetherionClient.js";
 import { Theme, baseEmbed, line, code, kv } from "./embeds.js";
 
 const COLORS: Record<CaseType, ColorResolvable> = {
@@ -28,8 +34,6 @@ const TITLES: Record<CaseType, string> = {
   other: "Moderasyon",
 };
 
-export async function sendModLog(): Promise<void> {}
-
 export function buildModEmbed(data: {
   type: CaseType;
   userTag: string;
@@ -38,6 +42,7 @@ export function buildModEmbed(data: {
   reason: string;
   duration?: string;
   caseId?: number;
+  userAvatar?: string | null;
 }): EmbedBuilder {
   const embed = baseEmbed(COLORS[data.type])
     .setAuthor({ name: "MODERASYON" })
@@ -56,6 +61,25 @@ export function buildModEmbed(data: {
         .join("\n")
     );
 
+  if (data.userAvatar) embed.setThumbnail(data.userAvatar);
   if (data.caseId) embed.setFooter({ text: `Case #${data.caseId} · Aetherion` });
   return embed;
+}
+
+/** Send moderation embed to configured modlog channel */
+export async function sendModLog(
+  client: AetherionClient,
+  guildId: string,
+  embed: EmbedBuilder
+): Promise<void> {
+  const channelId = client.settings.get(guildId).modlogChannelId;
+  if (!channelId) return;
+
+  try {
+    const channel = await client.channels.fetch(channelId);
+    if (!channel || !channel.isTextBased() || channel.isDMBased()) return;
+    await (channel as TextChannel).send({ embeds: [embed] });
+  } catch {
+    /* channel deleted / missing perms */
+  }
 }

@@ -5,24 +5,37 @@ import type { Locale } from "../i18n/index.js";
 export interface GuildConfig {
   prefix: string;
   locale: Locale;
+  modlogChannelId: string | null;
+  welcomeChannelId: string | null;
+  welcomeMessage: string;
+  leaveMessage: string;
 }
 
 type SettingsDump = Record<string, GuildConfig>;
 
+const DEFAULTS: GuildConfig = {
+  prefix: "!",
+  locale: "tr",
+  modlogChannelId: null,
+  welcomeChannelId: null,
+  welcomeMessage: "Hoş geldin {user} — **{server}** ailesine katıldın. Üye #{count}",
+  leaveMessage: "**{user}** sunucudan ayrıldı.",
+};
+
 /**
- * Per-guild settings (prefix, language) with JSON persistence.
+ * Per-guild settings with JSON persistence.
  */
 export class GuildSettings {
   private data = new Collection<string, GuildConfig>();
   private store = new JsonStore<SettingsDump>("guilds.json");
   private ready = false;
-  private defaults: GuildConfig = { prefix: "!", locale: "tr" };
+  private defaults: GuildConfig = { ...DEFAULTS };
 
   public async init(defaultPrefix = "!"): Promise<void> {
     this.defaults.prefix = defaultPrefix;
     const loaded = await this.store.load({});
     for (const [id, cfg] of Object.entries(loaded)) {
-      this.data.set(id, cfg);
+      this.data.set(id, { ...DEFAULTS, ...cfg });
     }
     this.ready = true;
   }
@@ -38,18 +51,34 @@ export class GuildSettings {
     return this.data.get(guildId) ?? { ...this.defaults };
   }
 
-  public setPrefix(guildId: string, prefix: string): void {
-    const cfg = this.get(guildId);
-    cfg.prefix = prefix;
+  private mutate(guildId: string, patch: Partial<GuildConfig>): GuildConfig {
+    const cfg = { ...this.get(guildId), ...patch };
     this.data.set(guildId, cfg);
     this.persist();
+    return cfg;
+  }
+
+  public setPrefix(guildId: string, prefix: string): void {
+    this.mutate(guildId, { prefix });
   }
 
   public setLocale(guildId: string, locale: Locale): void {
-    const cfg = this.get(guildId);
-    cfg.locale = locale;
-    this.data.set(guildId, cfg);
-    this.persist();
+    this.mutate(guildId, { locale });
+  }
+
+  public setModlog(guildId: string, channelId: string | null): void {
+    this.mutate(guildId, { modlogChannelId: channelId });
+  }
+
+  public setWelcome(
+    guildId: string,
+    data: { channelId?: string | null; message?: string; leaveMessage?: string }
+  ): void {
+    const patch: Partial<GuildConfig> = {};
+    if (data.channelId !== undefined) patch.welcomeChannelId = data.channelId;
+    if (data.message !== undefined) patch.welcomeMessage = data.message;
+    if (data.leaveMessage !== undefined) patch.leaveMessage = data.leaveMessage;
+    this.mutate(guildId, patch);
   }
 
   public getPrefix(guildId: string): string {

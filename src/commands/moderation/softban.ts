@@ -6,6 +6,7 @@ import {
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
 import { Theme, baseEmbed, line, code, kv } from "../../utils/embeds.js";
+import { buildModEmbed, sendModLog } from "../../utils/modlog.js";
 
 export default class SoftbanCommand extends Command {
   constructor() {
@@ -72,5 +73,20 @@ export default class SoftbanCommand extends Command {
       .setFooter({ text: `Case #${modCase.id} · Aetherion` });
 
     await interaction.reply({ embeds: [embed] });
+
+    await sendModLog(
+      client,
+      interaction.guild.id,
+      buildModEmbed({
+        type: "softban",
+        userTag: target.tag,
+        userId: target.id,
+        moderatorTag: interaction.user.tag,
+        reason,
+        caseId: modCase.id,
+        userAvatar: target.displayAvatarURL({ size: 256 }),
+      })
+    );
+
   }
 }
