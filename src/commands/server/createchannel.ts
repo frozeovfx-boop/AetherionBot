@@ -3,10 +3,10 @@ import {
   ChatInputCommandInteraction,
   PermissionFlagsBits,
   ChannelType,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv } from "../../utils/embeds.js";
 
 export default class CreatechannelCommand extends Command {
   constructor() {
@@ -21,9 +21,7 @@ export default class CreatechannelCommand extends Command {
       data: new SlashCommandBuilder()
         .setName("createchannel")
         .setDescription("Metin kanalı oluşturur")
-        .addStringOption((opt) =>
-          opt.setName("isim").setDescription("Kanal adı").setRequired(true)
-        )
+        .addStringOption((o) => o.setName("isim").setDescription("Kanal adı").setRequired(true))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
         .toJSON(),
     });
@@ -31,16 +29,26 @@ export default class CreatechannelCommand extends Command {
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) return;
-    const name = interaction.options.getString("isim", true);
-    const ch = await interaction.guild.channels.create({
+
+    const name = interaction.options.getString("isim", true).toLowerCase().replace(/\s+/g, "-").slice(0, 100);
+    const channel = await interaction.guild.channels.create({
       name,
       type: ChannelType.GuildText,
-      reason: `createchannel | ${interaction.user.tag}`,
+      reason: `createchannel · ${interaction.user.tag}`,
     });
-    const embed = new EmbedBuilder()
-      .setColor(0x57f287)
-      .setDescription(`Kanal oluşturuldu: ${ch}`)
-      .setTimestamp();
+
+    const embed = baseEmbed(Theme.success)
+      .setAuthor({ name: "SERVER" })
+      .setTitle("Kanal Oluşturuldu")
+      .setDescription(
+        [
+          line(),
+          kv("Kanal", `${channel}`),
+          kv("Yetkili", interaction.user.tag),
+          line(),
+        ].join("\n")
+      );
+
     await interaction.reply({ embeds: [embed] });
   }
 }

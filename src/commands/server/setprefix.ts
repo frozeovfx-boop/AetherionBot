@@ -2,16 +2,19 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
-  EmbedBuilder,
+  Collection,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
-export default class SetPrefixCommand extends Command {
+export const prefixes = new Collection<string, string>();
+
+export default class SetprefixCommand extends Command {
   constructor() {
     super({
       name: "setprefix",
-      description: "Sunucu prefixini ayarlar (placeholder — DB yakında)",
+      description: "Sunucu prefixini ayarlar",
       category: "server",
       cooldown: 5,
       guildOnly: true,
@@ -19,8 +22,8 @@ export default class SetPrefixCommand extends Command {
       data: new SlashCommandBuilder()
         .setName("setprefix")
         .setDescription("Sunucu prefixini ayarlar")
-        .addStringOption((opt) =>
-          opt.setName("prefix").setDescription("Yeni prefix (1-5 karakter)").setRequired(true).setMaxLength(5)
+        .addStringOption((o) =>
+          o.setName("prefix").setDescription("Yeni prefix (1-5 karakter)").setRequired(true)
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
         .toJSON(),
@@ -28,13 +31,23 @@ export default class SetPrefixCommand extends Command {
   }
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
-    const prefix = interaction.options.getString("prefix", true);
+    if (!interaction.guild) return;
 
-    const embed = new EmbedBuilder()
-      .setColor(0x57f287)
-      .setTitle("Prefix Güncellendi")
-      .setDescription(`Yeni prefix: \`${prefix}\`\n\n*Kalıcı kayıt bir sonraki adımda eklenecek.*`)
-      .setTimestamp();
+    const prefix = interaction.options.getString("prefix", true);
+    if (prefix.length < 1 || prefix.length > 5) {
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.warning).setDescription("Prefix 1-5 karakter olmalı.")],
+        ephemeral: true,
+      });
+      return;
+    }
+
+    prefixes.set(interaction.guild.id, prefix);
+
+    const embed = baseEmbed(Theme.success)
+      .setAuthor({ name: "SERVER" })
+      .setTitle("Prefix")
+      .setDescription([line(), kv("Yeni", code(prefix)), line()].join("\n"));
 
     await interaction.reply({ embeds: [embed] });
   }

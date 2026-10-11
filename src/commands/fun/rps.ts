@@ -1,10 +1,13 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv } from "../../utils/embeds.js";
+
+const CHOICES = ["taş", "kağıt", "makas"] as const;
+const EMOJI = { taş: "🪨", kağıt: "📄", makas: "✂️" };
 
 export default class RpsCommand extends Command {
   constructor() {
@@ -12,16 +15,19 @@ export default class RpsCommand extends Command {
       name: "rps",
       description: "Taş kağıt makas",
       category: "fun",
-      cooldown: 2,
+      cooldown: 3,
       data: new SlashCommandBuilder()
         .setName("rps")
         .setDescription("Taş kağıt makas")
-        .addStringOption((opt) =>
-          opt.setName("secim").setDescription("Seçimin").setRequired(true)
+        .addStringOption((o) =>
+          o
+            .setName("secim")
+            .setDescription("Seçimin")
+            .setRequired(true)
             .addChoices(
-              { name: "Taş", value: "rock" },
-              { name: "Kağıt", value: "paper" },
-              { name: "Makas", value: "scissors" }
+              { name: "Taş", value: "taş" },
+              { name: "Kağıt", value: "kağıt" },
+              { name: "Makas", value: "makas" }
             )
         )
         .toJSON(),
@@ -29,22 +35,33 @@ export default class RpsCommand extends Command {
   }
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
-    const choice = interaction.options.getString("secim", true);
-    const bot = ["rock", "paper", "scissors"][Math.floor(Math.random() * 3)]!;
-    const names: Record<string, string> = { rock: "Taş", paper: "Kağıt", scissors: "Makas" };
-    let result = "Berabere!";
-    if (choice === bot) result = "Berabere!";
+    const user = interaction.options.getString("secim", true) as typeof CHOICES[number];
+    const bot = CHOICES[Math.floor(Math.random() * 3)]!;
+
+    let result = "Berabere";
+    if (user === bot) result = "Berabere";
     else if (
-      (choice === "rock" && bot === "scissors") ||
-      (choice === "paper" && bot === "rock") ||
-      (choice === "scissors" && bot === "paper")
-    ) result = "Kazandın!";
-    else result = "Kaybettin!";
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
-      .setTitle("Taş Kağıt Makas")
-      .setDescription(`Sen: **${names[choice]}**\nBot: **${names[bot]}**\n\n**${result}**`)
-      .setTimestamp();
+      (user === "taş" && bot === "makas") ||
+      (user === "kağıt" && bot === "taş") ||
+      (user === "makas" && bot === "kağıt")
+    )
+      result = "Kazandın";
+    else result = "Kaybettin";
+
+    const embed = baseEmbed(
+      result === "Kazandın" ? Theme.success : result === "Kaybettin" ? Theme.danger : Theme.mute
+    )
+      .setAuthor({ name: "RPS" })
+      .setTitle(result)
+      .setDescription(
+        [
+          line(),
+          kv("Sen", `${EMOJI[user]} ${user}`),
+          kv("Bot", `${EMOJI[bot]} ${bot}`),
+          line(),
+        ].join("\n")
+      );
+
     await interaction.reply({ embeds: [embed] });
   }
 }
