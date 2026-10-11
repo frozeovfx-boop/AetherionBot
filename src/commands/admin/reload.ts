@@ -1,47 +1,43 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
+import { loadCommands } from "../../handlers/commandHandler.js";
 
 export default class ReloadCommand extends Command {
   constructor() {
     super({
       name: "reload",
-      description: "Komut sayısını ve durumu gösterir (owner)",
+      description: "Komutları yeniden yükler (owner)",
       category: "admin",
-      cooldown: 5,
+      cooldown: 10,
       ownerOnly: true,
       data: new SlashCommandBuilder()
         .setName("reload")
-        .setDescription("Komut sayısını ve durumu gösterir (owner)")
+        .setDescription("Komutları yeniden yükler (owner)")
         .toJSON(),
     });
   }
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
-    const byCat = new Map<string, number>();
-    for (const cmd of client.commands.values()) {
-      byCat.set(cmd.category, (byCat.get(cmd.category) ?? 0) + 1);
-    }
+    await interaction.deferReply({ ephemeral: true });
+    client.commands.clear();
+    await loadCommands(client);
 
-    const lines = [...byCat.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .map(([cat, n]) => `**${cat}**: ${n}`)
-      .join("\n");
+    const embed = baseEmbed(Theme.success)
+      .setAuthor({ name: "ADMIN" })
+      .setTitle("Reload")
+      .setDescription(
+        [
+          line(),
+          kv("Komutlar", code(client.commands.size)),
+          line(),
+        ].join("\n")
+      );
 
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
-      .setTitle("Bot Durumu")
-      .setDescription(`Toplam komut: **${client.commands.size}**\n\n${lines}`)
-      .addFields(
-        { name: "Sunucular", value: `${client.guilds.cache.size}`, inline: true },
-        { name: "Ping", value: `${client.ws.ping}ms`, inline: true }
-      )
-      .setTimestamp();
-
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.editReply({ embeds: [embed] });
   }
 }

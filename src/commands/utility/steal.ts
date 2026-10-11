@@ -2,16 +2,17 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
-  EmbedBuilder,
+  parseEmoji,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 export default class StealCommand extends Command {
   constructor() {
     super({
       name: "steal",
-      description: "Başka sunucudan emoji çalar",
+      description: "Emojiyi sunucuya ekler",
       category: "utility",
       cooldown: 5,
       guildOnly: true,
@@ -19,10 +20,9 @@ export default class StealCommand extends Command {
       clientPermissions: [PermissionFlagsBits.ManageGuildExpressions],
       data: new SlashCommandBuilder()
         .setName("steal")
-        .setDescription("Başka sunucudan emoji çalar")
-        .addStringOption((opt) =>
-          opt.setName("emoji").setDescription("Emoji").setRequired(true)
-        )
+        .setDescription("Emojiyi sunucuya ekler")
+        .addStringOption((o) => o.setName("emoji").setDescription("Emoji").setRequired(true))
+        .addStringOption((o) => o.setName("isim").setDescription("İsim").setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuildExpressions)
         .toJSON(),
     });
@@ -30,24 +30,41 @@ export default class StealCommand extends Command {
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) return;
+
     const raw = interaction.options.getString("emoji", true);
-    const match = raw.match(/<a?:(\w+):(\d+)>/);
-    if (!match) {
-      await interaction.reply({ content: "Geçerli özel emoji gir.", ephemeral: true });
+    const parsed = parseEmoji(raw);
+    if (!parsed?.id) {
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.warning).setDescription("Geçerli bir özel emoji gir.")],
+        ephemeral: true,
+      });
       return;
     }
-    const [, name, id] = match;
-    const animated = raw.startsWith("<a:");
-    const url = `https://cdn.discordapp.com/emojis/${id}.${animated ? "gif" : "png"}`;
+
+    const ext = parsed.animated ? "gif" : "png";
+    const url = `https://cdn.discordapp.com/emojis/${parsed.id}.${ext}`;
+    const name = (interaction.options.getString("isim") ?? parsed.name ?? "emoji").replace(/\W/g, "").slice(0, 32);
+
     try {
-      const emoji = await interaction.guild.emojis.create({ attachment: url, name: name! });
-      const embed = new EmbedBuilder()
-        .setColor(0x57f287)
-        .setDescription(`Emoji eklendi: ${emoji}`)
-        .setTimestamp();
+      const emoji = await interaction.guild.emojis.create({ attachment: url, name });
+      const embed = baseEmbed(Theme.success)
+        .setAuthor({ name: "UTILITY" })
+        .setTitle("Emoji Eklendi")
+        .setThumbnail(url)
+        .setDescription(
+          [
+            line(),
+            kv("İsim", code(emoji.name ?? name)),
+            kv("ID", code(emoji.id)),
+            line(),
+          ].join("\n")
+        );
       await interaction.reply({ embeds: [embed] });
     } catch {
-      await interaction.reply({ content: "Emoji eklenemedi (limit veya yetki).", ephemeral: true });
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.danger).setDescription("Emoji eklenemedi (limit / yetki).")],
+        ephemeral: true,
+      });
     }
   }
 }

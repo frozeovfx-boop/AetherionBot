@@ -1,38 +1,35 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line } from "../../utils/embeds.js";
 
 export default class QrCommand extends Command {
   constructor() {
     super({
       name: "qr",
-      description: "Metinden QR kod oluşturur",
+      description: "QR kod oluşturur",
       category: "utility",
       cooldown: 5,
       data: new SlashCommandBuilder()
         .setName("qr")
-        .setDescription("Metinden QR kod oluşturur")
-        .addStringOption((opt) =>
-          opt.setName("metin").setDescription("QR içeriği").setRequired(true)
-        )
+        .setDescription("QR kod oluşturur")
+        .addStringOption((o) => o.setName("metin").setDescription("İçerik").setRequired(true))
         .toJSON(),
     });
   }
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const text = interaction.options.getString("metin", true);
-    const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(text)}`;
+    const url = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(text.slice(0, 500))}`;
 
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
-      .setTitle("QR Kod")
+    const embed = baseEmbed(Theme.primary)
+      .setAuthor({ name: "QR" })
+      .setTitle("Kod")
       .setImage(url)
-      .setFooter({ text: text.slice(0, 50) })
-      .setTimestamp();
+      .setDescription([line(), text.slice(0, 200), line()].join("\n"));
 
     await interaction.reply({ embeds: [embed] });
   }

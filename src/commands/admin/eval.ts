@@ -1,11 +1,10 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
-  codeBlock,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, code } from "../../utils/embeds.js";
 import { inspect } from "node:util";
 
 export default class EvalCommand extends Command {
@@ -14,48 +13,36 @@ export default class EvalCommand extends Command {
       name: "eval",
       description: "Kod çalıştırır (sadece owner)",
       category: "admin",
-      cooldown: 0,
+      cooldown: 3,
       ownerOnly: true,
       data: new SlashCommandBuilder()
         .setName("eval")
         .setDescription("Kod çalıştırır (sadece owner)")
-        .addStringOption((opt) =>
-          opt.setName("kod").setDescription("Çalıştırılacak kod").setRequired(true)
-        )
+        .addStringOption((o) => o.setName("kod").setDescription("Kod").setRequired(true))
         .toJSON(),
     });
   }
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const code = interaction.options.getString("kod", true);
-
     await interaction.deferReply({ ephemeral: true });
 
     try {
-      let evaled = eval(code);
-      if (evaled instanceof Promise) evaled = await evaled;
-      if (typeof evaled !== "string") evaled = inspect(evaled, { depth: 1 });
+      // eslint-disable-next-line no-eval
+      let result = await eval(code);
+      if (typeof result !== "string") result = inspect(result, { depth: 1 });
+      result = String(result).slice(0, 1900);
 
-      const output = String(evaled).slice(0, 1900);
-
-      const embed = new EmbedBuilder()
-        .setColor(0x57f287)
-        .setTitle("Eval")
-        .addFields(
-          { name: "Input", value: codeBlock("ts", code.slice(0, 1000)) },
-          { name: "Output", value: codeBlock("js", output) }
-        );
+      const embed = baseEmbed(Theme.success)
+        .setAuthor({ name: "EVAL" })
+        .setDescription([line(), "```js\n" + result + "\n```", line()].join("\n"));
 
       await interaction.editReply({ embeds: [embed] });
-    } catch (error) {
-      const embed = new EmbedBuilder()
-        .setColor(0xed4245)
-        .setTitle("Eval Error")
-        .addFields(
-          { name: "Input", value: codeBlock("ts", code.slice(0, 1000)) },
-          { name: "Error", value: codeBlock("js", String(error).slice(0, 1000)) }
-        );
-
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const embed = baseEmbed(Theme.danger)
+        .setAuthor({ name: "EVAL" })
+        .setDescription([line(), "```\n" + msg.slice(0, 1500) + "\n```", line()].join("\n"));
       await interaction.editReply({ embeds: [embed] });
     }
   }

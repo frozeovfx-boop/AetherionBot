@@ -1,25 +1,23 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
-export default class RoleInfoCommand extends Command {
+export default class RoleinfoCommand extends Command {
   constructor() {
     super({
       name: "roleinfo",
-      description: "Rol hakkında bilgi gösterir",
+      description: "Rol bilgisi",
       category: "utility",
       cooldown: 3,
       guildOnly: true,
       data: new SlashCommandBuilder()
         .setName("roleinfo")
-        .setDescription("Rol hakkında bilgi gösterir")
-        .addRoleOption((opt) =>
-          opt.setName("rol").setDescription("Rol").setRequired(true)
-        )
+        .setDescription("Rol bilgisi")
+        .addRoleOption((o) => o.setName("rol").setDescription("Rol").setRequired(true))
         .toJSON(),
     });
   }
@@ -27,19 +25,21 @@ export default class RoleInfoCommand extends Command {
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const role = interaction.options.getRole("rol", true);
 
-    const embed = new EmbedBuilder()
-      .setColor(role.color || 0x5865f2)
-      .setTitle(`Rol: ${role.name}`)
-      .addFields(
-        { name: "ID", value: role.id, inline: true },
-        { name: "Renk", value: role.hexColor, inline: true },
-        { name: "Üye Sayısı", value: `${role.members?.size ?? "—"}`, inline: true },
-        { name: "Mentionable", value: role.mentionable ? "Evet" : "Hayır", inline: true },
-        { name: "Hoisted", value: role.hoist ? "Evet" : "Hayır", inline: true },
-        { name: "Pozisyon", value: `${role.position}`, inline: true },
-        { name: "Oluşturulma", value: `<t:${Math.floor(role.createdTimestamp / 1000)}:R>`, inline: true }
-      )
-      .setTimestamp();
+    const embed = baseEmbed(role.color || Theme.primary)
+      .setAuthor({ name: "ROLE" })
+      .setTitle(role.name)
+      .setDescription(
+        [
+          line(),
+          kv("ID", code(role.id)),
+          kv("Renk", code(`#${role.color.toString(16).padStart(6, "0")}`)),
+          kv("Üye", code(role.members?.size ?? "—")),
+          kv("Mentionable", role.mentionable ? "Evet" : "Hayır"),
+          kv("Hoist", role.hoist ? "Evet" : "Hayır"),
+          kv("Pozisyon", code(role.position)),
+          line(),
+        ].join("\n")
+      );
 
     await interaction.reply({ embeds: [embed] });
   }
