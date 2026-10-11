@@ -9,6 +9,7 @@ import { logger } from "../utils/logger.js";
 import { config } from "../config/index.js";
 import { CaseManager } from "../database/CaseManager.js";
 import { EconomyManager } from "../database/EconomyManager.js";
+import { GuildSettings } from "../database/GuildSettings.js";
 import { MusicManager } from "../music/MusicManager.js";
 
 export class AetherionClient extends Client {
@@ -18,6 +19,7 @@ export class AetherionClient extends Client {
   public readonly logger = logger;
   public readonly cases = new CaseManager();
   public readonly economy = new EconomyManager();
+  public readonly settings = new GuildSettings();
   public readonly music = new MusicManager();
 
   constructor() {

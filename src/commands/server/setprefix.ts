@@ -2,13 +2,10 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
-  Collection,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
 import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
-
-export const prefixes = new Collection<string, string>();
 
 export default class SetprefixCommand extends Command {
   constructor() {
@@ -42,7 +39,7 @@ export default class SetprefixCommand extends Command {
       return;
     }
 
-    prefixes.set(interaction.guild.id, prefix);
+    client.settings.setPrefix(interaction.guild.id, prefix);
 
     const embed = baseEmbed(Theme.success)
       .setAuthor({ name: "SERVER" })

@@ -1,7 +1,6 @@
 import { Events, Message, Collection } from "discord.js";
 import { Event } from "../structures/Event.js";
 import type { AetherionClient } from "../client/AetherionClient.js";
-import { prefixes } from "../commands/server/setprefix.js";
 import { afkMap } from "../commands/utility/afk.js";
 
 export default class MessageCreateEvent extends Event<typeof Events.MessageCreate> {
@@ -12,7 +11,6 @@ export default class MessageCreateEvent extends Event<typeof Events.MessageCreat
   public async execute(client: AetherionClient, message: Message): Promise<void> {
     if (message.author.bot || !message.guild) return;
 
-    // AFK return
     if (afkMap.has(message.author.id)) {
       afkMap.delete(message.author.id);
       await message.reply({ content: "AFK modundan çıktın." }).then((m) => {
@@ -20,7 +18,6 @@ export default class MessageCreateEvent extends Event<typeof Events.MessageCreat
       });
     }
 
-    // Mention AFK users
     for (const user of message.mentions.users.values()) {
       const afk = afkMap.get(user.id);
       if (afk) {
@@ -31,7 +28,7 @@ export default class MessageCreateEvent extends Event<typeof Events.MessageCreat
       }
     }
 
-    const prefix = prefixes.get(message.guild.id) ?? client.config.PREFIX;
+    const prefix = client.settings.getPrefix(message.guild.id);
     if (!message.content.startsWith(prefix)) return;
 
     const args = message.content.slice(prefix.length).trim().split(/\s+/);
@@ -41,7 +38,6 @@ export default class MessageCreateEvent extends Event<typeof Events.MessageCreat
     const command = client.commands.get(name);
     if (!command) return;
 
-    // Allow prefix for all commands that aren't context-menu only
     if (command.ownerOnly && !client.config.ownerIds.includes(message.author.id)) {
       await message.reply("Bu komutu sadece bot sahibi kullanabilir.");
       return;
@@ -66,7 +62,6 @@ export default class MessageCreateEvent extends Event<typeof Events.MessageCreat
     setTimeout(() => timestamps.delete(message.author.id), cooldownAmount);
 
     try {
-      // Prefix commands that only support interaction will fail gracefully
       await command.execute(client, message as never, args);
     } catch (error) {
       client.logger.error(error, `Prefix command error: ${command.name}`);

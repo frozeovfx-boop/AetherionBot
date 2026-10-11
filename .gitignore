@@ -1,39 +1,36 @@
-# Dependencies
-node_modules/
-.pnp
-.pnp.js
 
 # Build
-dist/
-build/
-*.tsbuildinfo
-
+# Dependencies
 # Environment
-.env
-.env.local
-.env.*.local
-
+# IDE
 # Logs
-logs/
+# Misc
+# OS
+# persistent runtime data
 *.log
+*.swo
+*.swp
+*.tgz
+*.tsbuildinfo
+.DS_Store
+.cache/
+.env
+.env.*.local
+.env.local
+.idea/
+.nyc_output/
+.pnp
+.pnp.js
+.vscode/
+Thumbs.db
+build/
+coverage/
+data/
+dist/
+logs/
+node_modules/
 npm-debug.log*
+temp/
+tmp/
 yarn-debug.log*
 yarn-error.log*
-
-# OS
-.DS_Store
-Thumbs.db
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# Misc
-coverage/
-.nyc_output/
-tmp/
-temp/
-*.tgz
-.cache/

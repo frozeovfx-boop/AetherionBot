@@ -1,4 +1,5 @@
 import { Collection } from "discord.js";
+import { JsonStore } from "./JsonStore.js";
 
 export interface EconomyProfile {
   userId: string;
@@ -11,11 +12,31 @@ export interface EconomyProfile {
   lastWork: number | null;
 }
 
+type EconomyDump = Record<string, EconomyProfile>;
+
 /**
- * In-memory economy store. DB-ready interface.
+ * Economy store with JSON persistence.
+ * Interface stays the same — commands don't care about storage.
  */
 export class EconomyManager {
   private profiles = new Collection<string, EconomyProfile>();
+  private store = new JsonStore<EconomyDump>("economy.json");
+  private ready = false;
+
+  public async init(): Promise<void> {
+    const data = await this.store.load({});
+    for (const [k, v] of Object.entries(data)) {
+      this.profiles.set(k, v);
+    }
+    this.ready = true;
+  }
+
+  private persist(): void {
+    if (!this.ready) return;
+    const dump: EconomyDump = {};
+    for (const [k, v] of this.profiles) dump[k] = v;
+    this.store.save(dump);
+  }
 
   private key(guildId: string, userId: string): string {
     return `${guildId}:${userId}`;
@@ -36,6 +57,7 @@ export class EconomyManager {
         lastWork: null,
       };
       this.profiles.set(k, profile);
+      this.persist();
     }
     return profile;
   }
@@ -43,6 +65,7 @@ export class EconomyManager {
   public addWallet(guildId: string, userId: string, amount: number): EconomyProfile {
     const p = this.get(guildId, userId);
     p.wallet = Math.max(0, p.wallet + amount);
+    this.persist();
     return p;
   }
 
@@ -50,6 +73,7 @@ export class EconomyManager {
     const p = this.get(guildId, userId);
     if (p.wallet < amount) return false;
     p.wallet -= amount;
+    this.persist();
     return true;
   }
 
@@ -58,6 +82,7 @@ export class EconomyManager {
     if (p.wallet < amount) return false;
     p.wallet -= amount;
     p.bank += amount;
+    this.persist();
     return true;
   }
 
@@ -66,13 +91,15 @@ export class EconomyManager {
     if (p.bank < amount) return false;
     p.bank -= amount;
     p.wallet += amount;
+    this.persist();
     return true;
   }
 
-  public addXp(guildId: string, userId: string, amount: number): {
-    profile: EconomyProfile;
-    leveledUp: boolean;
-  } {
+  public addXp(
+    guildId: string,
+    userId: string,
+    amount: number
+  ): { profile: EconomyProfile; leveledUp: boolean } {
     const p = this.get(guildId, userId);
     p.xp += amount;
     let leveledUp = false;
@@ -82,6 +109,7 @@ export class EconomyManager {
       p.level += 1;
       leveledUp = true;
     }
+    this.persist();
     return { profile: p, leveledUp };
   }
 

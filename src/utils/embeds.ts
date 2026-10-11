@@ -31,6 +31,10 @@ export function line(): string {
   return "────────────────────────";
 }
 
+export function divider(): string {
+  return line();
+}
+
 export function code(v: string | number): string {
   return `\`${v}\``;
 }

@@ -1,13 +1,45 @@
 import { Collection } from "discord.js";
 import type { ModCase, CaseType } from "../types/moderation.js";
+import { JsonStore } from "./JsonStore.js";
+
+type CaseDump = {
+  cases: Record<string, ModCase[]>;
+  counters: Record<string, number>;
+};
 
 /**
- * In-memory case store.
- * Interface is DB-ready: swap implementation later with Postgres/Prisma without touching commands.
+ * Case store with JSON persistence.
  */
 export class CaseManager {
-  private cases = new Collection<string, ModCase[]>(); // guildId -> cases
-  private counters = new Collection<string, number>(); // guildId -> next id
+  private cases = new Collection<string, ModCase[]>();
+  private counters = new Collection<string, number>();
+  private store = new JsonStore<CaseDump>("cases.json");
+  private ready = false;
+
+  public async init(): Promise<void> {
+    const data = await this.store.load({ cases: {}, counters: {} });
+    for (const [guildId, list] of Object.entries(data.cases)) {
+      this.cases.set(
+        guildId,
+        list.map((c) => ({
+          ...c,
+          createdAt: new Date(c.createdAt),
+        }))
+      );
+    }
+    for (const [guildId, n] of Object.entries(data.counters)) {
+      this.counters.set(guildId, n);
+    }
+    this.ready = true;
+  }
+
+  private persist(): void {
+    if (!this.ready) return;
+    const dump: CaseDump = { cases: {}, counters: {} };
+    for (const [k, v] of this.cases) dump.cases[k] = v;
+    for (const [k, v] of this.counters) dump.counters[k] = v;
+    this.store.save(dump);
+  }
 
   public create(data: {
     guildId: string;
@@ -35,7 +67,7 @@ export class CaseManager {
     const list = this.cases.get(data.guildId) ?? [];
     list.push(modCase);
     this.cases.set(data.guildId, list);
-
+    this.persist();
     return modCase;
   }
 
@@ -61,6 +93,7 @@ export class CaseManager {
         cleared++;
       }
     }
+    if (cleared) this.persist();
     return cleared;
   }
 
@@ -68,6 +101,7 @@ export class CaseManager {
     const c = this.get(guildId, caseId);
     if (!c) return false;
     c.active = false;
+    this.persist();
     return true;
   }
 }

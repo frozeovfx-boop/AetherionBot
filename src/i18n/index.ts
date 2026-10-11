@@ -1,4 +1,3 @@
-import { Collection } from "discord.js";
 import { tr, type TranslationKey } from "./locales/tr.js";
 import { en } from "./locales/en.js";
 import { de } from "./locales/de.js";
@@ -9,6 +8,7 @@ import { ru } from "./locales/ru.js";
 import { ja } from "./locales/ja.js";
 import { ar } from "./locales/ar.js";
 import { hi } from "./locales/hi.js";
+import type { GuildSettings } from "../database/GuildSettings.js";
 
 export type Locale = "tr" | "en" | "de" | "fr" | "es" | "pt" | "ru" | "ja" | "ar" | "hi";
 
@@ -16,15 +16,20 @@ const catalogs: Record<Locale, Record<TranslationKey, string>> = {
   tr, en, de, fr, es, pt, ru, ja, ar, hi,
 };
 
-const guildLocales = new Collection<string, Locale>();
+let settingsRef: GuildSettings | null = null;
+
+/** Called once at boot so locale reads hit persistent guild settings */
+export function bindGuildSettings(settings: GuildSettings): void {
+  settingsRef = settings;
+}
 
 export function setGuildLocale(guildId: string, locale: Locale): void {
-  guildLocales.set(guildId, locale);
+  settingsRef?.setLocale(guildId, locale);
 }
 
 export function getGuildLocale(guildId?: string | null): Locale {
-  if (!guildId) return "tr";
-  return guildLocales.get(guildId) ?? "tr";
+  if (!guildId || !settingsRef) return "tr";
+  return settingsRef.getLocale(guildId);
 }
 
 export function t(
