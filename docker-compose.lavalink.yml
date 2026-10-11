@@ -1,0 +1,19 @@
+# Standalone Lavalink node for Aetherion music
+# Usage: docker compose -f docker-compose.lavalink.yml up -d
+#
+# Then set on the bot host:
+#   LAVALINK_HOST=<this-machine-ip-or-localhost>
+#   LAVALINK_PORT=2333
+#   LAVALINK_PASSWORD=youshallnotpass
+
+services:
+  lavalink:
+    image: ghcr.io/lavalink-devs/lavalink:4
+    container_name: aetherion-lavalink
+    restart: unless-stopped
+    environment:
+      - _JAVA_OPTIONS=-Xmx512M
+    volumes:
+      - ./lavalink/application.yml:/opt/Lavalink/application.yml:ro
+    ports:
+      - "2333:2333"

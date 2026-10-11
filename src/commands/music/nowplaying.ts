@@ -33,19 +33,28 @@ export default class NowplayingCommand extends Command {
       return;
     }
 
+    const t = queue.current;
     const embed = baseEmbed(Theme.music)
       .setAuthor({ name: "MUSIC" })
       .setTitle("Şimdi Çalıyor")
       .setDescription(
         [
           line(),
-          kv("Parça", queue.current.title),
+          kv("Parça", t.title),
+          t.author ? kv("Sanatçı", t.author) : null,
+          kv("Süre", client.music.formatDuration(t.duration)),
           kv("Durum", queue.playing ? "▶ Çalıyor" : "⏸ Duraklatıldı"),
           kv("Ses", code(`${queue.volume}%`)),
           kv("Loop", code(queue.loop)),
+          kv("Lavalink", client.music.lavalinkReady ? "● Online" : "○ Offline"),
           line(),
-        ].join("\n")
-      );
+        ]
+          .filter(Boolean)
+          .join("\n")
+      )
+      .setFooter({ text: t.requesterTag });
+
+    if (t.artworkUrl) embed.setThumbnail(t.artworkUrl);
 
     await interaction.reply({ embeds: [embed] });
   }
