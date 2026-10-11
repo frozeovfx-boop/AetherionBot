@@ -5,6 +5,7 @@ import {
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
 import { Theme, baseEmbed, code, divider } from "../../utils/embeds.js";
+import { tg } from "../../i18n/index.js";
 
 const COOLDOWN = 24 * 60 * 60 * 1000;
 const REWARD = 500;
@@ -13,21 +14,21 @@ export default class DailyCommand extends Command {
   constructor() {
     super({
       name: "daily",
-      description: "Günlük ödül",
+      description: "Günlük ödül / Daily reward",
       category: "economy",
       cooldown: 3,
       guildOnly: true,
       data: new SlashCommandBuilder()
         .setName("daily")
-        .setDescription("Günlük ödül")
+        .setDescription("Daily reward")
         .toJSON(),
     });
   }
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) return;
-
-    const profile = client.economy.get(interaction.guild.id, interaction.user.id);
+    const gid = interaction.guild.id;
+    const profile = client.economy.get(gid, interaction.user.id);
     const now = Date.now();
 
     if (profile.lastDaily && now - profile.lastDaily < COOLDOWN) {
@@ -35,23 +36,23 @@ export default class DailyCommand extends Command {
       const hours = Math.floor(remaining / 3_600_000);
       const mins = Math.floor((remaining % 3_600_000) / 60_000);
       const embed = baseEmbed(Theme.warning)
-        .setTitle("⬡ Daily")
-        .setDescription(`Çok erken.\nTekrar: **${hours}s ${mins}dk** sonra`);
+        .setTitle(tg(gid, "eco.daily_title"))
+        .setDescription(tg(gid, "eco.daily_wait", { time: `${hours}h ${mins}m` }));
       await interaction.reply({ embeds: [embed], ephemeral: true });
       return;
     }
 
     profile.lastDaily = now;
-    client.economy.addWallet(interaction.guild.id, interaction.user.id, REWARD);
-    const p = client.economy.get(interaction.guild.id, interaction.user.id);
+    client.economy.addWallet(gid, interaction.user.id, REWARD);
+    const p = client.economy.get(gid, interaction.user.id);
 
     const embed = baseEmbed(Theme.economy)
-      .setTitle("⬡ Daily Ödül")
+      .setTitle(tg(gid, "eco.daily_title"))
       .setDescription(
         [
           divider(),
-          `**+${REWARD.toLocaleString()}** 💵 cüzdanına eklendi`,
-          `Yeni bakiye  ${code(p.wallet.toLocaleString())}`,
+          tg(gid, "eco.daily_claim", { amount: REWARD.toLocaleString() }),
+          `${tg(gid, "eco.daily_balance")}  ${code(p.wallet.toLocaleString())}`,
           divider(),
         ].join("\n")
       );

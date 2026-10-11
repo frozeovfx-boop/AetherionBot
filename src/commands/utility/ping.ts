@@ -2,23 +2,28 @@ import { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
 import { Theme, baseEmbed, code } from "../../utils/embeds.js";
+import { tg } from "../../i18n/index.js";
 
 export default class PingCommand extends Command {
   constructor() {
     super({
       name: "ping",
-      description: "Bot gecikmesini gösterir",
+      description: "Bot gecikmesini gösterir / Bot latency",
       category: "utility",
       cooldown: 3,
       data: new SlashCommandBuilder()
         .setName("ping")
-        .setDescription("Bot gecikmesini gösterir")
+        .setDescription("Bot latency / Gecikme")
         .toJSON(),
     });
   }
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
-    const sent = await interaction.reply({ content: "⋯ ölçülüyor", fetchReply: true });
+    const gid = interaction.guildId;
+    const sent = await interaction.reply({
+      content: tg(gid, "ping.measuring"),
+      fetchReply: true,
+    });
     const latency = sent.createdTimestamp - interaction.createdTimestamp;
     const api = Math.round(client.ws.ping);
 
@@ -30,12 +35,12 @@ export default class PingCommand extends Command {
     };
 
     const embed = baseEmbed(Theme.primary)
-      .setTitle("◈ Bağlantı")
+      .setTitle(tg(gid, "ping.title"))
       .setDescription(
         [
-          `**Mesaj**  ${code(`${latency}ms`)}  \`${bar(latency)}\``,
-          `**API**    ${code(`${api}ms`)}  \`${bar(api)}\``,
-          `**Uptime** ${code(formatUptime(client.uptime ?? 0))}`,
+          `**${tg(gid, "ping.latency")}**  ${code(`${latency}ms`)}  \`${bar(latency)}\``,
+          `**${tg(gid, "ping.api")}**    ${code(`${api}ms`)}  \`${bar(api)}\``,
+          `**${tg(gid, "ping.uptime")}** ${code(formatUptime(client.uptime ?? 0))}`,
         ].join("\n")
       );
 
@@ -48,7 +53,7 @@ function formatUptime(ms: number): string {
   const m = Math.floor(ms / 60000) % 60;
   const h = Math.floor(ms / 3600000) % 24;
   const d = Math.floor(ms / 86400000);
-  if (d) return `${d}g ${h}s`;
-  if (h) return `${h}s ${m}d`;
-  return `${m}d ${s}sn`;
+  if (d) return `${d}d ${h}h`;
+  if (h) return `${h}h ${m}m`;
+  return `${m}m ${s}s`;
 }

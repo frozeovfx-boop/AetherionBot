@@ -5,20 +5,21 @@ import {
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
 import { Theme, baseEmbed, code, divider } from "../../utils/embeds.js";
+import { tg } from "../../i18n/index.js";
 
 export default class BalanceCommand extends Command {
   constructor() {
     super({
       name: "balance",
-      description: "Cüzdan ve banka bakiyesi",
+      description: "Cüzdan ve banka / Wallet and bank",
       category: "economy",
       cooldown: 3,
       guildOnly: true,
       data: new SlashCommandBuilder()
         .setName("balance")
-        .setDescription("Cüzdan ve banka bakiyesi")
+        .setDescription("Wallet & bank balance")
         .addUserOption((opt) =>
-          opt.setName("kullanici").setDescription("Hedef").setRequired(false)
+          opt.setName("kullanici").setDescription("User").setRequired(false)
         )
         .toJSON(),
     });
@@ -31,31 +32,28 @@ export default class BalanceCommand extends Command {
     const p = client.economy.get(interaction.guild.id, user.id);
     const total = p.wallet + p.bank;
     const needed = p.level * 100;
-    const xpBar = progressBar(p.xp, needed, 10);
+    const filled = Math.min(10, Math.round((p.xp / Math.max(needed, 1)) * 10));
+    const xpBar = `\`${"█".repeat(filled)}${"░".repeat(10 - filled)}\``;
+    const gid = interaction.guild.id;
 
     const embed = baseEmbed(Theme.economy)
       .setAuthor({
         name: user.username,
         iconURL: user.displayAvatarURL({ size: 128 }),
       })
-      .setTitle("⬡ Bakiye")
+      .setTitle(tg(gid, "eco.balance_title"))
       .setDescription(
         [
           divider(),
-          `Cüzdan     ${code(`${p.wallet.toLocaleString()} 💵`)}`,
-          `Banka      ${code(`${p.bank.toLocaleString()} 🏦`)}`,
-          `Toplam     **${total.toLocaleString()}**`,
+          `${tg(gid, "eco.wallet")}     ${code(`${p.wallet.toLocaleString()} 💵`)}`,
+          `${tg(gid, "eco.bank")}      ${code(`${p.bank.toLocaleString()} 🏦`)}`,
+          `${tg(gid, "eco.total")}     **${total.toLocaleString()}**`,
           divider(),
-          `Seviye **${p.level}**  ${xpBar}  ${code(`${p.xp}/${needed} XP`)}`,
+          `${tg(gid, "eco.level")} **${p.level}**  ${xpBar}  ${code(`${p.xp}/${needed} XP`)}`,
         ].join("\n")
       )
       .setThumbnail(user.displayAvatarURL({ size: 256 }));
 
     await interaction.reply({ embeds: [embed] });
   }
-}
-
-function progressBar(current: number, max: number, size: number): string {
-  const filled = Math.min(size, Math.round((current / Math.max(max, 1)) * size));
-  return `\`${"█".repeat(filled)}${"░".repeat(size - filled)}\``;
 }
