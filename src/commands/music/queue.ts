@@ -1,10 +1,10 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, code } from "../../utils/embeds.js";
 
 export default class QueueCommand extends Command {
   constructor() {
@@ -14,10 +14,7 @@ export default class QueueCommand extends Command {
       category: "music",
       cooldown: 3,
       guildOnly: true,
-      data: new SlashCommandBuilder()
-        .setName("queue")
-        .setDescription("Müzik kuyruğunu gösterir")
-        .toJSON(),
+      data: new SlashCommandBuilder().setName("queue").setDescription("Müzik kuyruğunu gösterir").toJSON(),
     });
   }
 
@@ -26,24 +23,37 @@ export default class QueueCommand extends Command {
 
     const queue = client.music.getQueue(interaction.guild.id);
     if (!queue || (!queue.current && queue.tracks.length === 0)) {
-      await interaction.reply({ content: "Kuyruk boş.", ephemeral: true });
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.mute).setDescription("Kuyruk boş.")],
+        ephemeral: true,
+      });
       return;
     }
 
-    const lines: string[] = [];
-    if (queue.current) {
-      lines.push(`**Çalıyor:** ${queue.current.title} — ${queue.current.requesterTag}`);
-    }
-    queue.tracks.slice(0, 15).forEach((t, i) => {
-      lines.push(`\`${i + 1}.\` ${t.title} — ${t.requesterTag}`);
-    });
+    const now = queue.current ? `▶  **${queue.current.title}**` : "—";
+    const list =
+      queue.tracks.length === 0
+        ? "*Sırada parça yok*"
+        : queue.tracks
+            .slice(0, 10)
+            .map((t, i) => `${code(`${i + 1}.`)}  ${t.title}`)
+            .join("\n");
 
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
-      .setTitle("🎵 Kuyruk")
-      .setDescription(lines.join("\n") || "Boş")
-      .setFooter({ text: `Toplam: ${(queue.current ? 1 : 0) + queue.tracks.length} şarkı` })
-      .setTimestamp();
+    const embed = baseEmbed(Theme.music)
+      .setAuthor({ name: "MUSIC" })
+      .setTitle("Kuyruk")
+      .setDescription(
+        [
+          line(),
+          "**Şimdi**",
+          now,
+          "",
+          "**Sırada**",
+          list,
+          line(),
+          `Toplam  ${code(queue.tracks.length)}  ·  Loop  ${code(queue.loop)}`,
+        ].join("\n")
+      );
 
     await interaction.reply({ embeds: [embed] });
   }

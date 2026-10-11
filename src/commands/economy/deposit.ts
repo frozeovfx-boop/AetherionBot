@@ -1,24 +1,24 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 export default class DepositCommand extends Command {
   constructor() {
     super({
       name: "deposit",
-      description: "Cüzdandan bankaya para yatır",
+      description: "Cüzdandan bankaya yatır",
       category: "economy",
       cooldown: 3,
       guildOnly: true,
       data: new SlashCommandBuilder()
         .setName("deposit")
-        .setDescription("Cüzdandan bankaya para yatır")
-        .addIntegerOption((opt) =>
-          opt.setName("miktar").setDescription("Miktar").setRequired(true).setMinValue(1)
+        .setDescription("Cüzdandan bankaya yatır")
+        .addIntegerOption((o) =>
+          o.setName("miktar").setDescription("Miktar").setRequired(true).setMinValue(1)
         )
         .toJSON(),
     });
@@ -31,16 +31,27 @@ export default class DepositCommand extends Command {
     const ok = client.economy.deposit(interaction.guild.id, interaction.user.id, amount);
 
     if (!ok) {
-      await interaction.reply({ content: "Cüzdanında yeterli para yok.", ephemeral: true });
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.danger).setDescription("Cüzdanda yeterli para yok.")],
+        ephemeral: true,
+      });
       return;
     }
 
-    const profile = client.economy.get(interaction.guild.id, interaction.user.id);
-    const embed = new EmbedBuilder()
-      .setColor(0x57f287)
-      .setTitle("Para Yatırıldı")
-      .setDescription(`**${amount.toLocaleString()}** 💵 bankaya yatırıldı.\nBanka: **${profile.bank.toLocaleString()}**`)
-      .setTimestamp();
+    const p = client.economy.get(interaction.guild.id, interaction.user.id);
+
+    const embed = baseEmbed(Theme.economy)
+      .setAuthor({ name: "ECONOMY" })
+      .setTitle("Yatırım")
+      .setDescription(
+        [
+          line(),
+          kv("Yatırılan", `**${amount.toLocaleString()}** 💵`),
+          kv("Cüzdan", code(p.wallet.toLocaleString())),
+          kv("Banka", code(p.bank.toLocaleString())),
+          line(),
+        ].join("\n")
+      );
 
     await interaction.reply({ embeds: [embed] });
   }

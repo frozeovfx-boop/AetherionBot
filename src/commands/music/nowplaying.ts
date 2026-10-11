@@ -1,22 +1,22 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
-export default class NowPlayingCommand extends Command {
+export default class NowplayingCommand extends Command {
   constructor() {
     super({
       name: "nowplaying",
-      description: "Şu an çalan şarkıyı gösterir",
+      description: "Şu an çalan parçayı gösterir",
       category: "music",
       cooldown: 3,
       guildOnly: true,
       data: new SlashCommandBuilder()
         .setName("nowplaying")
-        .setDescription("Şu an çalan şarkıyı gösterir")
+        .setDescription("Şu an çalan parçayı gösterir")
         .toJSON(),
     });
   }
@@ -26,16 +26,26 @@ export default class NowPlayingCommand extends Command {
 
     const queue = client.music.getQueue(interaction.guild.id);
     if (!queue?.current) {
-      await interaction.reply({ content: "Çalan müzik yok.", ephemeral: true });
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.mute).setDescription("Çalan parça yok.")],
+        ephemeral: true,
+      });
       return;
     }
 
-    const t = queue.current;
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
-      .setTitle("🎵 Şu An Çalıyor")
-      .setDescription(`**${t.title}**\nİsteyen: ${t.requesterTag}`)
-      .setTimestamp();
+    const embed = baseEmbed(Theme.music)
+      .setAuthor({ name: "MUSIC" })
+      .setTitle("Şimdi Çalıyor")
+      .setDescription(
+        [
+          line(),
+          kv("Parça", queue.current.title),
+          kv("Durum", queue.playing ? "▶ Çalıyor" : "⏸ Duraklatıldı"),
+          kv("Ses", code(`${queue.volume}%`)),
+          kv("Loop", code(queue.loop)),
+          line(),
+        ].join("\n")
+      );
 
     await interaction.reply({ embeds: [embed] });
   }

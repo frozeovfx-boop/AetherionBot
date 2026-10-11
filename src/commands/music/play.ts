@@ -1,12 +1,11 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
   GuildMember,
-  ChannelType,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 export default class PlayCommand extends Command {
   constructor() {
@@ -19,8 +18,8 @@ export default class PlayCommand extends Command {
       data: new SlashCommandBuilder()
         .setName("play")
         .setDescription("Müzik çalar / kuyruğa ekler")
-        .addStringOption((opt) =>
-          opt.setName("sarki").setDescription("Şarkı adı veya URL").setRequired(true)
+        .addStringOption((o) =>
+          o.setName("sarki").setDescription("Şarkı adı veya URL").setRequired(true)
         )
         .toJSON(),
     });
@@ -32,39 +31,45 @@ export default class PlayCommand extends Command {
     const member = interaction.member as GuildMember;
     const voice = member.voice.channel;
 
-    if (!voice || (voice.type !== ChannelType.GuildVoice && voice.type !== ChannelType.GuildStageVoice)) {
-      await interaction.reply({ content: "Önce bir ses kanalına gir.", ephemeral: true });
+    if (!voice) {
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.warning).setDescription("Önce bir ses kanalına gir.")],
+        ephemeral: true,
+      });
       return;
     }
 
     const query = interaction.options.getString("sarki", true);
-
-    const queue = client.music.ensureQueue(interaction.guild.id, voice.id, interaction.channelId);
-
-    // Placeholder track until Lavalink is connected
     const track = {
-      title: query,
-      url: query.startsWith("http") ? query : `search:${query}`,
-      duration: 0,
-      requesterId: interaction.user.id,
-      requesterTag: interaction.user.tag,
+      title: query.length > 80 ? query.slice(0, 77) + "..." : query,
+      url: query.startsWith("http") ? query : undefined,
+      requestedBy: interaction.user.id,
     };
 
-    const position = client.music.addTrack(interaction.guild.id, track);
+    const queue = client.music.getQueue(interaction.guild.id) ?? client.music.createQueue(interaction.guild.id, voice.id);
+    const isFirst = !queue.current && queue.tracks.length === 0;
 
-    if (!queue.current) {
-      queue.current = queue.tracks.shift() ?? null;
+    if (isFirst) {
+      queue.current = track;
       queue.playing = true;
+    } else {
+      queue.tracks.push(track);
     }
 
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
-      .setTitle(queue.playing && position <= 1 ? "Çalıyor" : "Kuyruğa Eklendi")
-      .setDescription(`**${track.title}**\nİsteyen: ${interaction.user.tag}`)
-      .setFooter({
-        text: "Lavalink bağlandığında gerçek ses çalacak. Şu an kuyruk sistemi aktif.",
-      })
-      .setTimestamp();
+    const embed = baseEmbed(Theme.music)
+      .setAuthor({ name: "MUSIC" })
+      .setTitle(isFirst ? "Çalıyor" : "Kuyruğa Eklendi")
+      .setDescription(
+        [
+          line(),
+          kv("Parça", track.title),
+          kv("Kanal", `${voice.name}`),
+          kv("Sıra", isFirst ? "Şimdi" : code(`#${queue.tracks.length}`)),
+          line(),
+          "*Lavalink bağlı değil — kuyruk aktif, ses yok.*",
+        ].join("\n")
+      )
+      .setFooter({ text: `İsteyen · ${interaction.user.tag}` });
 
     await interaction.reply({ embeds: [embed] });
   }
