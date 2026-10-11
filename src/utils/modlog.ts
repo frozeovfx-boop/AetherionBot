@@ -1,6 +1,6 @@
 import { EmbedBuilder, ColorResolvable } from "discord.js";
 import type { CaseType } from "../types/moderation.js";
-import { Theme, baseEmbed, code, divider } from "./embeds.js";
+import { Theme, baseEmbed, line, code, kv } from "./embeds.js";
 
 const COLORS: Record<CaseType, ColorResolvable> = {
   ban: Theme.danger,
@@ -28,9 +28,7 @@ const TITLES: Record<CaseType, string> = {
   other: "Moderasyon",
 };
 
-export async function sendModLog(): Promise<void> {
-  // wired when modlog channel config exists
-}
+export async function sendModLog(): Promise<void> {}
 
 export function buildModEmbed(data: {
   type: CaseType;
@@ -41,25 +39,23 @@ export function buildModEmbed(data: {
   duration?: string;
   caseId?: number;
 }): EmbedBuilder {
-  const lines = [
-    divider(),
-    `**Kullanıcı**   ${data.userTag}`,
-    `**ID**          ${code(data.userId)}`,
-    `**Yetkili**     ${data.moderatorTag}`,
-    data.duration ? `**Süre**        ${code(data.duration)}` : null,
-    `**Sebep**       ${data.reason}`,
-    divider(),
-  ]
-    .filter(Boolean)
-    .join("\n");
-
   const embed = baseEmbed(COLORS[data.type])
-    .setTitle(`🛡  ${TITLES[data.type]}`)
-    .setDescription(lines);
+    .setAuthor({ name: "MODERASYON" })
+    .setTitle(TITLES[data.type])
+    .setDescription(
+      [
+        line(),
+        kv("Kullanıcı", data.userTag),
+        kv("ID", code(data.userId)),
+        kv("Yetkili", data.moderatorTag),
+        data.duration ? kv("Süre", data.duration) : null,
+        kv("Sebep", data.reason),
+        line(),
+      ]
+        .filter(Boolean)
+        .join("\n")
+    );
 
-  if (data.caseId) {
-    embed.setFooter({ text: `Case #${data.caseId} · Aetherion` });
-  }
-
+  if (data.caseId) embed.setFooter({ text: `Case #${data.caseId} · Aetherion` });
   return embed;
 }

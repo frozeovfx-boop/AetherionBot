@@ -5,34 +5,25 @@ import {
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
-import { buildModEmbed } from "../../utils/modlog.js";
+import { Theme, baseEmbed, line, code, kv } from "../../utils/embeds.js";
 
 export default class BanCommand extends Command {
   constructor() {
     super({
       name: "ban",
-      description: "Bir kullanıcıyı sunucudan yasaklar",
+      description: "Kullanıcıyı yasaklar",
       category: "moderation",
-      cooldown: 5,
+      cooldown: 3,
       guildOnly: true,
       permissions: [PermissionFlagsBits.BanMembers],
       clientPermissions: [PermissionFlagsBits.BanMembers],
       data: new SlashCommandBuilder()
         .setName("ban")
-        .setDescription("Bir kullanıcıyı sunucudan yasaklar")
-        .addUserOption((opt) =>
-          opt.setName("kullanici").setDescription("Yasaklanacak kullanıcı").setRequired(true)
-        )
-        .addStringOption((opt) =>
-          opt.setName("sebep").setDescription("Yasaklama sebebi").setRequired(false)
-        )
-        .addIntegerOption((opt) =>
-          opt
-            .setName("mesaj_sil")
-            .setDescription("Kaç günlük mesajlar silinsin (0-7)")
-            .setMinValue(0)
-            .setMaxValue(7)
-            .setRequired(false)
+        .setDescription("Kullanıcıyı yasaklar")
+        .addUserOption((o) => o.setName("kullanici").setDescription("Hedef").setRequired(true))
+        .addStringOption((o) => o.setName("sebep").setDescription("Sebep").setRequired(false))
+        .addIntegerOption((o) =>
+          o.setName("gun").setDescription("Mesaj silme (0-7 gün)").setMinValue(0).setMaxValue(7).setRequired(false)
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
         .toJSON(),
@@ -43,34 +34,22 @@ export default class BanCommand extends Command {
     if (!interaction.guild) return;
 
     const target = interaction.options.getUser("kullanici", true);
-    const reason = interaction.options.getString("sebep") ?? "Sebep belirtilmedi";
-    const deleteMessageDays = interaction.options.getInteger("mesaj_sil") ?? 0;
+    const reason = interaction.options.getString("sebep") ?? "Belirtilmedi";
+    const days = interaction.options.getInteger("gun") ?? 0;
+    const member = await interaction.guild.members.fetch(target.id).catch(() => null);
 
-    if (target.id === interaction.user.id || target.id === client.user?.id) {
-      await interaction.reply({ content: "Geçersiz hedef.", ephemeral: true });
+    if (target.id === interaction.user.id) {
+      await interaction.reply({ embeds: [baseEmbed(Theme.warning).setDescription("Kendini yasaklayamazsın.")], ephemeral: true });
+      return;
+    }
+    if (member && !member.bannable) {
+      await interaction.reply({ embeds: [baseEmbed(Theme.danger).setDescription("Bu kullanıcı yasaklanamaz.")], ephemeral: true });
       return;
     }
 
-    const member = await interaction.guild.members.fetch(target.id).catch(() => null);
-    if (member) {
-      if (!member.bannable) {
-        await interaction.reply({ content: "Bu kullanıcıyı yasaklayamıyorum (yetki/rol hiyerarşisi).", ephemeral: true });
-        return;
-      }
-      if (
-        interaction.member &&
-        "roles" in interaction.member &&
-        member.roles.highest.position >= interaction.member.roles.highest.position &&
-        interaction.guild.ownerId !== interaction.user.id
-      ) {
-        await interaction.reply({ content: "Bu kullanıcı senden yüksek veya eşit role sahip.", ephemeral: true });
-        return;
-      }
-    }
-
     await interaction.guild.members.ban(target.id, {
-      reason: `${reason} | Yetkili: ${interaction.user.tag}`,
-      deleteMessageSeconds: deleteMessageDays * 24 * 60 * 60,
+      deleteMessageSeconds: days * 86_400,
+      reason: `${reason} · ${interaction.user.tag}`,
     });
 
     const modCase = client.cases.create({
@@ -81,14 +60,24 @@ export default class BanCommand extends Command {
       reason,
     });
 
-    const embed = buildModEmbed({
-      type: "ban",
-      userTag: target.tag,
-      userId: target.id,
-      moderatorTag: interaction.user.tag,
-      reason,
-      caseId: modCase.id,
-    });
+    const embed = baseEmbed(Theme.mod)
+      .setAuthor({ name: "MODERASYON", iconURL: interaction.guild.iconURL({ size: 64 }) ?? undefined })
+      .setTitle("Yasaklama")
+      .setThumbnail(target.displayAvatarURL({ size: 256 }))
+      .setDescription(
+        [
+          line(),
+          kv("Kullanıcı", `${target.tag}`),
+          kv("ID", code(target.id)),
+          kv("Yetkili", interaction.user.tag),
+          kv("Sebep", reason),
+          days ? kv("Silinen", `${days} gün mesaj`) : null,
+          line(),
+        ]
+          .filter(Boolean)
+          .join("\n")
+      )
+      .setFooter({ text: `Case #${modCase.id} · Aetherion` });
 
     await interaction.reply({ embeds: [embed] });
   }

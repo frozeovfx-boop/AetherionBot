@@ -2,30 +2,25 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
-import { buildModEmbed } from "../../utils/modlog.js";
+import { Theme, baseEmbed, line, code, kv } from "../../utils/embeds.js";
 
 export default class WarnCommand extends Command {
   constructor() {
     super({
       name: "warn",
-      description: "Bir kullanıcıyı uyarır",
+      description: "Kullanıcıyı uyarır",
       category: "moderation",
       cooldown: 3,
       guildOnly: true,
       permissions: [PermissionFlagsBits.ModerateMembers],
       data: new SlashCommandBuilder()
         .setName("warn")
-        .setDescription("Bir kullanıcıyı uyarır")
-        .addUserOption((opt) =>
-          opt.setName("kullanici").setDescription("Uyarılan kullanıcı").setRequired(true)
-        )
-        .addStringOption((opt) =>
-          opt.setName("sebep").setDescription("Uyarı sebebi").setRequired(true)
-        )
+        .setDescription("Kullanıcıyı uyarır")
+        .addUserOption((o) => o.setName("kullanici").setDescription("Hedef").setRequired(true))
+        .addStringOption((o) => o.setName("sebep").setDescription("Sebep").setRequired(true))
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
         .toJSON(),
     });
@@ -37,13 +32,8 @@ export default class WarnCommand extends Command {
     const target = interaction.options.getUser("kullanici", true);
     const reason = interaction.options.getString("sebep", true);
 
-    if (target.id === interaction.user.id) {
-      await interaction.reply({ content: "Kendini uyaramazsın.", ephemeral: true });
-      return;
-    }
-
-    if (target.bot) {
-      await interaction.reply({ content: "Botları uyaramazsın.", ephemeral: true });
+    if (target.bot || target.id === interaction.user.id) {
+      await interaction.reply({ embeds: [baseEmbed(Theme.warning).setDescription("Geçersiz hedef.")], ephemeral: true });
       return;
     }
 
@@ -55,26 +45,35 @@ export default class WarnCommand extends Command {
       reason,
     });
 
-    const embed = buildModEmbed({
-      type: "warn",
-      userTag: target.tag,
-      userId: target.id,
-      moderatorTag: interaction.user.tag,
-      reason,
-      caseId: modCase.id,
-    });
+    const warns = client.cases
+      .getUserCases(interaction.guild.id, target.id)
+      .filter((c) => c.type === "warn" && c.active).length;
+
+    const embed = baseEmbed(Theme.warning)
+      .setAuthor({ name: "MODERASYON", iconURL: interaction.guild.iconURL({ size: 64 }) ?? undefined })
+      .setTitle("Uyarı")
+      .setThumbnail(target.displayAvatarURL({ size: 256 }))
+      .setDescription(
+        [
+          line(),
+          kv("Kullanıcı", target.tag),
+          kv("ID", code(target.id)),
+          kv("Yetkili", interaction.user.tag),
+          kv("Sebep", reason),
+          kv("Toplam", `${warns} aktif uyarı`),
+          line(),
+        ].join("\n")
+      )
+      .setFooter({ text: `Case #${modCase.id} · Aetherion` });
 
     await interaction.reply({ embeds: [embed] });
 
-    try {
-      const dmEmbed = new EmbedBuilder()
-        .setColor(0xfee75c)
-        .setTitle(`Uyarı — ${interaction.guild.name}`)
-        .setDescription(`**Sebep:** ${reason}\n**Case:** #${modCase.id}`)
-        .setTimestamp();
-      await target.send({ embeds: [dmEmbed] });
-    } catch {
-      // DMs closed
-    }
+    await target.send({
+      embeds: [
+        baseEmbed(Theme.warning)
+          .setTitle(`${interaction.guild.name} · Uyarı`)
+          .setDescription(`**Sebep:** ${reason}\n**Yetkili:** ${interaction.user.tag}`),
+      ],
+    }).catch(() => null);
   }
 }

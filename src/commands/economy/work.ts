@@ -1,19 +1,18 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, code, kv } from "../../utils/embeds.js";
 
 const COOLDOWN = 60 * 60 * 1000;
 const JOBS = [
-  { name: "yazılımcı", min: 80, max: 200 },
-  { name: "kurye", min: 50, max: 120 },
-  { name: "aşçı", min: 60, max: 150 },
-  { name: "öğretmen", min: 70, max: 160 },
-  { name: "mühendis", min: 100, max: 250 },
-  { name: "tasarımcı", min: 90, max: 180 },
+  { name: "Yazılımcı", min: 80, max: 220 },
+  { name: "Kurye", min: 40, max: 120 },
+  { name: "Barista", min: 50, max: 140 },
+  { name: "Tasarımcı", min: 90, max: 250 },
+  { name: "Şoför", min: 60, max: 160 },
 ];
 
 export default class WorkCommand extends Command {
@@ -24,24 +23,20 @@ export default class WorkCommand extends Command {
       category: "economy",
       cooldown: 3,
       guildOnly: true,
-      data: new SlashCommandBuilder()
-        .setName("work")
-        .setDescription("Çalışıp para kazan")
-        .toJSON(),
+      data: new SlashCommandBuilder().setName("work").setDescription("Çalışıp para kazan").toJSON(),
     });
   }
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) return;
 
-    const profile = client.economy.get(interaction.guild.id, interaction.user.id);
+    const p = client.economy.get(interaction.guild.id, interaction.user.id);
     const now = Date.now();
 
-    if (profile.lastWork && now - profile.lastWork < COOLDOWN) {
-      const remaining = COOLDOWN - (now - profile.lastWork);
-      const mins = Math.ceil(remaining / 60_000);
+    if (p.lastWork && now - p.lastWork < COOLDOWN) {
+      const left = Math.ceil((COOLDOWN - (now - p.lastWork)) / 60_000);
       await interaction.reply({
-        content: `Çok yorgunsun. **${mins} dakika** sonra tekrar çalışabilirsin.`,
+        embeds: [baseEmbed(Theme.warning).setDescription(`Dinlen. **${left} dk** sonra tekrar.`)],
         ephemeral: true,
       });
       return;
@@ -49,16 +44,25 @@ export default class WorkCommand extends Command {
 
     const job = JOBS[Math.floor(Math.random() * JOBS.length)]!;
     const amount = Math.floor(Math.random() * (job.max - job.min + 1)) + job.min;
-
-    profile.lastWork = now;
+    p.lastWork = now;
     client.economy.addWallet(interaction.guild.id, interaction.user.id, amount);
-    client.economy.addXp(interaction.guild.id, interaction.user.id, Math.floor(amount / 10));
+    const { leveledUp, profile } = client.economy.addXp(interaction.guild.id, interaction.user.id, 15);
 
-    const embed = new EmbedBuilder()
-      .setColor(0x57f287)
-      .setTitle("İş Tamam")
-      .setDescription(`**${job.name}** olarak çalıştın ve **${amount.toLocaleString()}** 💵 kazandın.`)
-      .setTimestamp();
+    const embed = baseEmbed(Theme.economy)
+      .setAuthor({ name: interaction.user.username, iconURL: interaction.user.displayAvatarURL({ size: 64 }) })
+      .setTitle("Vardiya")
+      .setDescription(
+        [
+          line(),
+          kv("İş", job.name),
+          kv("Kazanç", `**+${amount.toLocaleString()}** 💵`),
+          kv("Cüzdan", code(profile.wallet.toLocaleString())),
+          leveledUp ? kv("Seviye", `↑ **${profile.level}**`) : null,
+          line(),
+        ]
+          .filter(Boolean)
+          .join("\n")
+      );
 
     await interaction.reply({ embeds: [embed] });
   }
