@@ -2,17 +2,17 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
-  EmbedBuilder,
   TextChannel,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 export default class SlowmodeCommand extends Command {
   constructor() {
     super({
       name: "slowmode",
-      description: "Kanalın yavaş mod süresini ayarlar",
+      description: "Yavaş mod ayarla",
       category: "moderation",
       cooldown: 3,
       guildOnly: true,
@@ -20,14 +20,9 @@ export default class SlowmodeCommand extends Command {
       clientPermissions: [PermissionFlagsBits.ManageChannels],
       data: new SlashCommandBuilder()
         .setName("slowmode")
-        .setDescription("Kanalın yavaş mod süresini ayarlar")
-        .addIntegerOption((opt) =>
-          opt
-            .setName("saniye")
-            .setDescription("Yavaş mod süresi (0 = kapat, max 21600)")
-            .setRequired(true)
-            .setMinValue(0)
-            .setMaxValue(21600)
+        .setDescription("Yavaş mod ayarla")
+        .addIntegerOption((o) =>
+          o.setName("saniye").setDescription("0-21600").setRequired(true).setMinValue(0).setMaxValue(21600)
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
         .toJSON(),
@@ -35,21 +30,29 @@ export default class SlowmodeCommand extends Command {
   }
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
-    if (!interaction.channel?.isTextBased()) return;
+    if (!interaction.channel || !("setRateLimitPerUser" in interaction.channel)) {
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.warning).setDescription("Bu kanalda slowmode yok.")],
+        ephemeral: true,
+      });
+      return;
+    }
 
     const seconds = interaction.options.getInteger("saniye", true);
-    const channel = interaction.channel as TextChannel;
+    await (interaction.channel as TextChannel).setRateLimitPerUser(seconds, `slowmode · ${interaction.user.tag}`);
 
-    await channel.setRateLimitPerUser(seconds, `Slowmode | Yetkili: ${interaction.user.tag}`);
-
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
+    const embed = baseEmbed(Theme.info)
+      .setAuthor({ name: "MODERASYON" })
+      .setTitle("Slowmode")
       .setDescription(
-        seconds === 0
-          ? "Yavaş mod **kapatıldı**."
-          : `Yavaş mod **${seconds} saniye** olarak ayarlandı.`
-      )
-      .setTimestamp();
+        [
+          line(),
+          kv("Kanal", `${interaction.channel}`),
+          kv("Süre", code(seconds === 0 ? "Kapalı" : `${seconds}s`)),
+          kv("Yetkili", interaction.user.tag),
+          line(),
+        ].join("\n")
+      );
 
     await interaction.reply({ embeds: [embed] });
   }

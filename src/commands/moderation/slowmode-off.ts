@@ -2,11 +2,11 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
-  EmbedBuilder,
   TextChannel,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv } from "../../utils/embeds.js";
 
 export default class SlowmodeOffCommand extends Command {
   constructor() {
@@ -28,11 +28,27 @@ export default class SlowmodeOffCommand extends Command {
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.channel || !("setRateLimitPerUser" in interaction.channel)) {
-      await interaction.reply({ content: "Bu kanalda kullanılamaz.", ephemeral: true });
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.warning).setDescription("Bu kanalda slowmode yok.")],
+        ephemeral: true,
+      });
       return;
     }
-    await (interaction.channel as TextChannel).setRateLimitPerUser(0, `slowmode-off | ${interaction.user.tag}`);
-    const embed = new EmbedBuilder().setColor(0x57f287).setDescription("Yavaş mod kapatıldı.").setTimestamp();
+
+    await (interaction.channel as TextChannel).setRateLimitPerUser(0, `slowmode-off · ${interaction.user.tag}`);
+
+    const embed = baseEmbed(Theme.success)
+      .setAuthor({ name: "MODERASYON" })
+      .setTitle("Slowmode Kapalı")
+      .setDescription(
+        [
+          line(),
+          kv("Kanal", `${interaction.channel}`),
+          kv("Yetkili", interaction.user.tag),
+          line(),
+        ].join("\n")
+      );
+
     await interaction.reply({ embeds: [embed] });
   }
 }
