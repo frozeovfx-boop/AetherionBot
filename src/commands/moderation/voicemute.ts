@@ -2,16 +2,16 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
-export default class VoiceMuteCommand extends Command {
+export default class VoicemuteCommand extends Command {
   constructor() {
     super({
       name: "voicemute",
-      description: "Kullanıcıyı ses kanalında susturur / susturmayı kaldırır",
+      description: "Ses sustur / kaldır",
       category: "moderation",
       cooldown: 3,
       guildOnly: true,
@@ -19,15 +19,10 @@ export default class VoiceMuteCommand extends Command {
       clientPermissions: [PermissionFlagsBits.MuteMembers],
       data: new SlashCommandBuilder()
         .setName("voicemute")
-        .setDescription("Kullanıcıyı ses kanalında susturur / susturmayı kaldırır")
-        .addUserOption((opt) =>
-          opt.setName("kullanici").setDescription("Hedef kullanıcı").setRequired(true)
-        )
-        .addBooleanOption((opt) =>
-          opt.setName("sustur").setDescription("true = sustur, false = kaldır").setRequired(true)
-        )
-        .addStringOption((opt) =>
-          opt.setName("sebep").setDescription("Sebep").setRequired(false)
+        .setDescription("Ses sustur / kaldır")
+        .addUserOption((o) => o.setName("kullanici").setDescription("Hedef").setRequired(true))
+        .addBooleanOption((o) =>
+          o.setName("sustur").setDescription("true = sustur, false = aç").setRequired(true)
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.MuteMembers)
         .toJSON(),
@@ -39,30 +34,31 @@ export default class VoiceMuteCommand extends Command {
 
     const target = interaction.options.getUser("kullanici", true);
     const mute = interaction.options.getBoolean("sustur", true);
-    const reason = interaction.options.getString("sebep") ?? "Voice mute";
-
     const member = await interaction.guild.members.fetch(target.id).catch(() => null);
-    if (!member) {
-      await interaction.reply({ content: "Kullanıcı sunucuda bulunamadı.", ephemeral: true });
+
+    if (!member?.voice.channel) {
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.warning).setDescription("Kullanıcı ses kanalında değil.")],
+        ephemeral: true,
+      });
       return;
     }
 
-    if (!member.voice.channel) {
-      await interaction.reply({ content: "Kullanıcı bir ses kanalında değil.", ephemeral: true });
-      return;
-    }
+    await member.voice.setMute(mute, `voicemute · ${interaction.user.tag}`);
 
-    await member.voice.setMute(mute, `${reason} | Yetkili: ${interaction.user.tag}`);
-
-    const embed = new EmbedBuilder()
-      .setColor(mute ? 0xfee75c : 0x57f287)
-      .setTitle(mute ? "Ses Susturma" : "Ses Susturma Kaldırıldı")
-      .addFields(
-        { name: "Kullanıcı", value: `${target.tag}`, inline: true },
-        { name: "Yetkili", value: interaction.user.tag, inline: true },
-        { name: "Sebep", value: reason }
-      )
-      .setTimestamp();
+    const embed = baseEmbed(mute ? Theme.warning : Theme.success)
+      .setAuthor({ name: "MODERASYON" })
+      .setTitle(mute ? "Ses Susturuldu" : "Ses Açıldı")
+      .setThumbnail(target.displayAvatarURL({ size: 256 }))
+      .setDescription(
+        [
+          line(),
+          kv("Kullanıcı", target.tag),
+          kv("ID", code(target.id)),
+          kv("Yetkili", interaction.user.tag),
+          line(),
+        ].join("\n")
+      );
 
     await interaction.reply({ embeds: [embed] });
   }

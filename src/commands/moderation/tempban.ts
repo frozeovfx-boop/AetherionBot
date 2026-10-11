@@ -2,25 +2,25 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 function parseDuration(input: string): number | null {
-  const match = input.match(/^(\d+)(s|m|h|d|w)$/i);
+  const match = input.match(/^(\d+)(m|h|d)$/i);
   if (!match) return null;
   const value = parseInt(match[1]!, 10);
   const unit = match[2]!.toLowerCase();
-  const multipliers: Record<string, number> = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000, w: 604_800_000 };
-  return value * (multipliers[unit] ?? 0);
+  const map: Record<string, number> = { m: 60_000, h: 3_600_000, d: 86_400_000 };
+  return value * (map[unit] ?? 0);
 }
 
-export default class TempBanCommand extends Command {
+export default class TempbanCommand extends Command {
   constructor() {
     super({
       name: "tempban",
-      description: "Kullanıcıyı geçici olarak yasaklar",
+      description: "Geçici yasaklama",
       category: "moderation",
       cooldown: 5,
       guildOnly: true,
@@ -28,19 +28,12 @@ export default class TempBanCommand extends Command {
       clientPermissions: [PermissionFlagsBits.BanMembers],
       data: new SlashCommandBuilder()
         .setName("tempban")
-        .setDescription("Kullanıcıyı geçici olarak yasaklar")
-        .addUserOption((opt) =>
-          opt.setName("kullanici").setDescription("Yasaklanacak kullanıcı").setRequired(true)
+        .setDescription("Geçici yasaklama")
+        .addUserOption((o) => o.setName("kullanici").setDescription("Hedef").setRequired(true))
+        .addStringOption((o) =>
+          o.setName("sure").setDescription("Süre (30m, 2h, 7d)").setRequired(true)
         )
-        .addStringOption((opt) =>
-          opt
-            .setName("sure")
-            .setDescription("Süre (örnek: 1h, 2d, 1w)")
-            .setRequired(true)
-        )
-        .addStringOption((opt) =>
-          opt.setName("sebep").setDescription("Sebep").setRequired(false)
-        )
+        .addStringOption((o) => o.setName("sebep").setDescription("Sebep").setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
         .toJSON(),
     });
@@ -52,51 +45,62 @@ export default class TempBanCommand extends Command {
     const target = interaction.options.getUser("kullanici", true);
     const durationStr = interaction.options.getString("sure", true);
     const reason = interaction.options.getString("sebep") ?? "Tempban";
-
     const ms = parseDuration(durationStr);
-    if (!ms || ms < 60_000 || ms > 30 * 86_400_000) {
+
+    if (!ms || ms < 60_000 || ms > 28 * 86_400_000) {
       await interaction.reply({
-        content: "Geçersiz süre. Örnek: `30m`, `2h`, `1d`, `1w` (min 1 dakika, max 30 gün)",
+        embeds: [baseEmbed(Theme.warning).setDescription("Geçersiz süre. Örnek: `30m` `2h` `7d`")],
         ephemeral: true,
       });
       return;
     }
 
-    if (target.id === interaction.user.id || target.id === client.user?.id) {
-      await interaction.reply({ content: "Geçersiz hedef.", ephemeral: true });
+    try {
+      await interaction.guild.members.ban(target.id, {
+        reason: `Tempban ${durationStr} · ${reason} · ${interaction.user.tag}`,
+      });
+    } catch {
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.danger).setDescription("Yasaklanamadı.")],
+        ephemeral: true,
+      });
       return;
     }
 
-    const member = await interaction.guild.members.fetch(target.id).catch(() => null);
-    if (member && !member.bannable) {
-      await interaction.reply({ content: "Bu kullanıcıyı yasaklayamıyorum.", ephemeral: true });
-      return;
-    }
-
-    await interaction.guild.members.ban(target.id, {
-      reason: `Tempban (${durationStr}) | ${reason} | Yetkili: ${interaction.user.tag}`,
+    const modCase = client.cases.create({
+      guildId: interaction.guild.id,
+      userId: target.id,
+      moderatorId: interaction.user.id,
+      type: "ban",
+      reason: `Tempban ${durationStr} · ${reason}`,
+      duration: ms,
     });
 
-    // Schedule unban via simple timeout (production: use BullMQ)
-    setTimeout(async () => {
-      try {
-        await interaction.guild?.members.unban(target.id, `Tempban süresi doldu`);
-      } catch {
-        // already unbanned or missing
-      }
-    }, ms);
-
-    const embed = new EmbedBuilder()
-      .setColor(0xed4245)
-      .setTitle("Geçici Yasaklama")
-      .addFields(
-        { name: "Kullanıcı", value: `${target.tag} (\`${target.id}\`)`, inline: true },
-        { name: "Süre", value: durationStr, inline: true },
-        { name: "Yetkili", value: interaction.user.tag, inline: true },
-        { name: "Sebep", value: reason }
+    const embed = baseEmbed(Theme.mod)
+      .setAuthor({ name: "MODERASYON" })
+      .setTitle("Geçici Yasak")
+      .setThumbnail(target.displayAvatarURL({ size: 256 }))
+      .setDescription(
+        [
+          line(),
+          kv("Kullanıcı", target.tag),
+          kv("ID", code(target.id)),
+          kv("Süre", durationStr),
+          kv("Yetkili", interaction.user.tag),
+          kv("Sebep", reason),
+          line(),
+        ].join("\n")
       )
-      .setTimestamp();
+      .setFooter({ text: `Case #${modCase.id} · Aetherion` });
 
     await interaction.reply({ embeds: [embed] });
+
+    setTimeout(async () => {
+      try {
+        await interaction.guild!.members.unban(target.id, "Tempban süresi doldu");
+      } catch {
+        /* already unbanned */
+      }
+    }, ms);
   }
 }

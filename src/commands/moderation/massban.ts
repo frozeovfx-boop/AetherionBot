@@ -2,16 +2,16 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
-export default class MassBanCommand extends Command {
+export default class MassbanCommand extends Command {
   constructor() {
     super({
       name: "massban",
-      description: "Birden fazla kullanıcıyı yasaklar (ID listesi)",
+      description: "Birden fazla ID yasakla",
       category: "moderation",
       cooldown: 15,
       guildOnly: true,
@@ -19,16 +19,11 @@ export default class MassBanCommand extends Command {
       clientPermissions: [PermissionFlagsBits.BanMembers],
       data: new SlashCommandBuilder()
         .setName("massban")
-        .setDescription("Birden fazla kullanıcıyı yasaklar (ID listesi)")
-        .addStringOption((opt) =>
-          opt
-            .setName("idler")
-            .setDescription("Yasaklanacak kullanıcı ID'leri (boşluk veya virgülle ayır)")
-            .setRequired(true)
+        .setDescription("Birden fazla ID yasakla")
+        .addStringOption((o) =>
+          o.setName("idler").setDescription("ID'ler (boşluk veya virgülle)").setRequired(true)
         )
-        .addStringOption((opt) =>
-          opt.setName("sebep").setDescription("Sebep").setRequired(false)
-        )
+        .addStringOption((o) => o.setName("sebep").setDescription("Sebep").setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
         .toJSON(),
     });
@@ -39,47 +34,51 @@ export default class MassBanCommand extends Command {
 
     const raw = interaction.options.getString("idler", true);
     const reason = interaction.options.getString("sebep") ?? "Massban";
-    const ids = [...new Set(raw.split(/[\s,]+/).map((s) => s.trim()).filter((id) => /^\d{17,20}$/.test(id)))];
+    const ids = [...new Set(raw.split(/[\s,]+/).filter((id) => /^\d{17,20}$/.test(id)))].slice(0, 20);
 
     if (ids.length === 0) {
-      await interaction.reply({ content: "Geçerli kullanıcı ID'si bulunamadı.", ephemeral: true });
-      return;
-    }
-
-    if (ids.length > 25) {
-      await interaction.reply({ content: "Tek seferde en fazla 25 kullanıcı yasaklayabilirsin.", ephemeral: true });
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.warning).setDescription("Geçerli ID bulunamadı.")],
+        ephemeral: true,
+      });
       return;
     }
 
     await interaction.deferReply();
-
-    let success = 0;
-    let failed = 0;
+    let ok = 0;
+    let fail = 0;
 
     for (const id of ids) {
-      if (id === interaction.user.id || id === client.user?.id) {
-        failed++;
-        continue;
-      }
       try {
         await interaction.guild.members.ban(id, {
-          reason: `Massban | ${reason} | Yetkili: ${interaction.user.tag}`,
+          reason: `Massban · ${reason} · ${interaction.user.tag}`,
         });
-        success++;
+        client.cases.create({
+          guildId: interaction.guild.id,
+          userId: id,
+          moderatorId: interaction.user.id,
+          type: "ban",
+          reason: `Massban · ${reason}`,
+        });
+        ok++;
       } catch {
-        failed++;
+        fail++;
       }
     }
 
-    const embed = new EmbedBuilder()
-      .setColor(0xed4245)
-      .setTitle("Massban Tamamlandı")
-      .addFields(
-        { name: "Başarılı", value: `${success}`, inline: true },
-        { name: "Başarısız", value: `${failed}`, inline: true },
-        { name: "Sebep", value: reason }
-      )
-      .setTimestamp();
+    const embed = baseEmbed(Theme.mod)
+      .setAuthor({ name: "MODERASYON" })
+      .setTitle("Massban")
+      .setDescription(
+        [
+          line(),
+          kv("Başarılı", code(ok)),
+          kv("Başarısız", code(fail)),
+          kv("Yetkili", interaction.user.tag),
+          kv("Sebep", reason),
+          line(),
+        ].join("\n")
+      );
 
     await interaction.editReply({ embeds: [embed] });
   }
