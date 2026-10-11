@@ -1,11 +1,10 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
-  TextChannel,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line } from "../../utils/embeds.js";
 
 export default class SuggestionCommand extends Command {
   constructor() {
@@ -13,14 +12,12 @@ export default class SuggestionCommand extends Command {
       name: "suggestion",
       description: "Öneri gönderir",
       category: "server",
-      cooldown: 30,
+      cooldown: 15,
       guildOnly: true,
       data: new SlashCommandBuilder()
         .setName("suggestion")
         .setDescription("Öneri gönderir")
-        .addStringOption((opt) =>
-          opt.setName("oneri").setDescription("Önerin").setRequired(true)
-        )
+        .addStringOption((o) => o.setName("oneri").setDescription("Önerin").setRequired(true))
         .toJSON(),
     });
   }
@@ -28,22 +25,16 @@ export default class SuggestionCommand extends Command {
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const text = interaction.options.getString("oneri", true);
 
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
+    const embed = baseEmbed(Theme.info)
       .setAuthor({
         name: interaction.user.tag,
-        iconURL: interaction.user.displayAvatarURL(),
+        iconURL: interaction.user.displayAvatarURL({ size: 64 }),
       })
-      .setTitle("💡 Öneri")
-      .setDescription(text)
-      .setTimestamp();
+      .setTitle("Öneri")
+      .setDescription([line(), text.slice(0, 2000), line()].join("\n"));
 
-    await interaction.reply({ content: "Önerin gönderildi.", ephemeral: true });
-
-    if (interaction.channel && "send" in interaction.channel) {
-      const msg = await (interaction.channel as TextChannel).send({ embeds: [embed] });
-      await msg.react("✅");
-      await msg.react("❌");
-    }
+    const msg = await interaction.reply({ embeds: [embed], fetchReply: true });
+    await msg.react("👍");
+    await msg.react("👎");
   }
 }

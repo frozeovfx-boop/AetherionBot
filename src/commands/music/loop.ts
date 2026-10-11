@@ -1,26 +1,26 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 export default class LoopCommand extends Command {
   constructor() {
     super({
       name: "loop",
-      description: "Döngü modunu ayarlar",
+      description: "Döngü modu",
       category: "music",
       cooldown: 3,
       guildOnly: true,
       data: new SlashCommandBuilder()
         .setName("loop")
-        .setDescription("Döngü modunu ayarlar")
-        .addStringOption((opt) =>
-          opt
+        .setDescription("Döngü modu")
+        .addStringOption((o) =>
+          o
             .setName("mod")
-            .setDescription("Döngü modu")
+            .setDescription("Mod")
             .setRequired(true)
             .addChoices(
               { name: "Kapalı", value: "off" },
@@ -34,21 +34,22 @@ export default class LoopCommand extends Command {
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) return;
-
     const queue = client.music.getQueue(interaction.guild.id);
     if (!queue) {
-      await interaction.reply({ content: "Aktif kuyruk yok.", ephemeral: true });
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.mute).setDescription("Kuyruk yok.")],
+        ephemeral: true,
+      });
       return;
     }
 
     const mode = interaction.options.getString("mod", true) as "off" | "track" | "queue";
     queue.loop = mode;
 
-    const labels = { off: "Kapalı", track: "Şarkı", queue: "Kuyruk" };
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
-      .setDescription(`Döngü: **${labels[mode]}**`)
-      .setTimestamp();
+    const embed = baseEmbed(Theme.music)
+      .setAuthor({ name: "MUSIC" })
+      .setTitle("Loop")
+      .setDescription([line(), kv("Mod", code(mode)), line()].join("\n"));
 
     await interaction.reply({ embeds: [embed] });
   }

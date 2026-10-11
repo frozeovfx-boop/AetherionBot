@@ -1,24 +1,24 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 export default class VolumeCommand extends Command {
   constructor() {
     super({
       name: "volume",
-      description: "Ses seviyesini ayarlar",
+      description: "Ses seviyesi",
       category: "music",
       cooldown: 3,
       guildOnly: true,
       data: new SlashCommandBuilder()
         .setName("volume")
-        .setDescription("Ses seviyesini ayarlar")
-        .addIntegerOption((opt) =>
-          opt.setName("seviye").setDescription("0-200").setRequired(true).setMinValue(0).setMaxValue(200)
+        .setDescription("Ses seviyesi")
+        .addIntegerOption((o) =>
+          o.setName("seviye").setDescription("0-200").setRequired(true).setMinValue(0).setMaxValue(200)
         )
         .toJSON(),
     });
@@ -26,20 +26,22 @@ export default class VolumeCommand extends Command {
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) return;
-
     const queue = client.music.getQueue(interaction.guild.id);
     if (!queue) {
-      await interaction.reply({ content: "Aktif kuyruk yok.", ephemeral: true });
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.mute).setDescription("Kuyruk yok.")],
+        ephemeral: true,
+      });
       return;
     }
 
-    const volume = interaction.options.getInteger("seviye", true);
-    queue.volume = volume;
+    const vol = interaction.options.getInteger("seviye", true);
+    queue.volume = vol;
 
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
-      .setDescription(`Ses seviyesi **${volume}%** olarak ayarlandı.`)
-      .setTimestamp();
+    const embed = baseEmbed(Theme.music)
+      .setAuthor({ name: "MUSIC" })
+      .setTitle("Ses")
+      .setDescription([line(), kv("Seviye", code(`${vol}%`)), line()].join("\n"));
 
     await interaction.reply({ embeds: [embed] });
   }

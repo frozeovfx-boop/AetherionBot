@@ -2,12 +2,12 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
-  EmbedBuilder,
-  ChannelType,
   TextChannel,
+  ChannelType,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line } from "../../utils/embeds.js";
 
 export default class AnnounceCommand extends Command {
   constructor() {
@@ -17,42 +17,39 @@ export default class AnnounceCommand extends Command {
       category: "server",
       cooldown: 10,
       guildOnly: true,
-      permissions: [PermissionFlagsBits.ManageMessages],
+      permissions: [PermissionFlagsBits.ManageGuild],
       data: new SlashCommandBuilder()
         .setName("announce")
         .setDescription("Duyuru gönderir")
-        .addStringOption((opt) =>
-          opt.setName("mesaj").setDescription("Duyuru metni").setRequired(true)
-        )
-        .addChannelOption((opt) =>
-          opt
+        .addStringOption((o) => o.setName("mesaj").setDescription("Duyuru metni").setRequired(true))
+        .addChannelOption((o) =>
+          o
             .setName("kanal")
-            .setDescription("Kanal (boşsa mevcut)")
-            .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
+            .setDescription("Kanal")
+            .addChannelTypes(ChannelType.GuildText)
             .setRequired(false)
         )
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
         .toJSON(),
     });
   }
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
-    const message = interaction.options.getString("mesaj", true);
-    const channel = (interaction.options.getChannel("kanal") ?? interaction.channel) as TextChannel | null;
+    const text = interaction.options.getString("mesaj", true);
+    const channel = (interaction.options.getChannel("kanal") ?? interaction.channel) as TextChannel;
 
-    if (!channel || !("send" in channel)) {
-      await interaction.reply({ content: "Geçersiz kanal.", ephemeral: true });
-      return;
-    }
-
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
-      .setTitle("📢 Duyuru")
-      .setDescription(message)
-      .setFooter({ text: `Gönderen: ${interaction.user.tag}` })
-      .setTimestamp();
+    const embed = baseEmbed(Theme.primary)
+      .setAuthor({
+        name: "DUYURU",
+        iconURL: interaction.guild?.iconURL({ size: 64 }) ?? undefined,
+      })
+      .setDescription([line(), text.slice(0, 4000), line()].join("\n"))
+      .setFooter({ text: interaction.user.tag });
 
     await channel.send({ embeds: [embed] });
-    await interaction.reply({ content: "Duyuru gönderildi.", ephemeral: true });
+    await interaction.reply({
+      embeds: [baseEmbed(Theme.success).setDescription(`Duyuru ${channel} kanalına gönderildi.`)],
+      ephemeral: true,
+    });
   }
 }

@@ -26,7 +26,7 @@ export default class PlayCommand extends Command {
   }
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
-    if (!interaction.guild) return;
+    if (!interaction.guild || !interaction.channel) return;
 
     const member = interaction.member as GuildMember;
     const voice = member.voice.channel;
@@ -42,11 +42,17 @@ export default class PlayCommand extends Command {
     const query = interaction.options.getString("sarki", true);
     const track = {
       title: query.length > 80 ? query.slice(0, 77) + "..." : query,
-      url: query.startsWith("http") ? query : undefined,
-      requestedBy: interaction.user.id,
+      url: query.startsWith("http") ? query : `search:${query}`,
+      duration: 0,
+      requesterId: interaction.user.id,
+      requesterTag: interaction.user.tag,
     };
 
-    const queue = client.music.getQueue(interaction.guild.id) ?? client.music.createQueue(interaction.guild.id, voice.id);
+    const queue = client.music.ensureQueue(
+      interaction.guild.id,
+      voice.id,
+      interaction.channel.id
+    );
     const isFirst = !queue.current && queue.tracks.length === 0;
 
     if (isFirst) {
@@ -63,7 +69,7 @@ export default class PlayCommand extends Command {
         [
           line(),
           kv("Parça", track.title),
-          kv("Kanal", `${voice.name}`),
+          kv("Kanal", voice.name),
           kv("Sıra", isFirst ? "Şimdi" : code(`#${queue.tracks.length}`)),
           line(),
           "*Lavalink bağlı değil — kuyruk aktif, ses yok.*",
