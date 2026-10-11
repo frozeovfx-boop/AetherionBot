@@ -1,10 +1,10 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 const CD = 7 * 24 * 60 * 60 * 1000;
 const map = new Map<string, number>();
@@ -24,20 +24,33 @@ export default class WeeklyCommand extends Command {
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) return;
+
     const key = `${interaction.guild.id}:${interaction.user.id}`;
     const now = Date.now();
     if (map.get(key) && now - map.get(key)! < CD) {
-      const left = CD - (now - map.get(key)!);
-      const days = Math.ceil(left / 86400000);
-      await interaction.reply({ content: `**${days} gün** sonra tekrar alabilirsin.`, ephemeral: true });
+      const days = Math.ceil((CD - (now - map.get(key)!)) / 86400000);
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.warning).setDescription(`**${days} gün** sonra tekrar.`)],
+        ephemeral: true,
+      });
       return;
     }
     map.set(key, now);
     client.economy.addWallet(interaction.guild.id, interaction.user.id, REWARD);
-    const embed = new EmbedBuilder()
-      .setColor(0xfee75c)
-      .setDescription(`Haftalık ödül: **+${REWARD.toLocaleString()}** 💵`)
-      .setTimestamp();
+    const p = client.economy.get(interaction.guild.id, interaction.user.id);
+
+    const embed = baseEmbed(Theme.economy)
+      .setAuthor({ name: "ECONOMY" })
+      .setTitle("Haftalık Ödül")
+      .setDescription(
+        [
+          line(),
+          kv("Ödül", `**+${REWARD.toLocaleString()}** 💵`),
+          kv("Cüzdan", code(p.wallet.toLocaleString())),
+          line(),
+        ].join("\n")
+      );
+
     await interaction.reply({ embeds: [embed] });
   }
 }

@@ -2,10 +2,10 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv } from "../../utils/embeds.js";
 
 export default class AddRoleCommand extends Command {
   constructor() {
@@ -20,12 +20,8 @@ export default class AddRoleCommand extends Command {
       data: new SlashCommandBuilder()
         .setName("addrole")
         .setDescription("Kullanıcıya rol verir")
-        .addUserOption((opt) =>
-          opt.setName("kullanici").setDescription("Hedef").setRequired(true)
-        )
-        .addRoleOption((opt) =>
-          opt.setName("rol").setDescription("Rol").setRequired(true)
-        )
+        .addUserOption((o) => o.setName("kullanici").setDescription("Hedef").setRequired(true))
+        .addRoleOption((o) => o.setName("rol").setDescription("Rol").setRequired(true))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles)
         .toJSON(),
     });
@@ -39,26 +35,43 @@ export default class AddRoleCommand extends Command {
     const member = await interaction.guild.members.fetch(target.id).catch(() => null);
 
     if (!member) {
-      await interaction.reply({ content: "Kullanıcı bulunamadı.", ephemeral: true });
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.danger).setDescription("Kullanıcı bulunamadı.")],
+        ephemeral: true,
+      });
       return;
     }
 
     if (role.managed || role.position >= interaction.guild.members.me!.roles.highest.position) {
-      await interaction.reply({ content: "Bu rolü veremiyorum.", ephemeral: true });
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.danger).setDescription("Bu rolü veremiyorum.")],
+        ephemeral: true,
+      });
       return;
     }
 
     if (member.roles.cache.has(role.id)) {
-      await interaction.reply({ content: "Zaten bu role sahip.", ephemeral: true });
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.warning).setDescription("Zaten bu role sahip.")],
+        ephemeral: true,
+      });
       return;
     }
 
-    await member.roles.add(role, `Addrole | ${interaction.user.tag}`);
+    await member.roles.add(role.id, `addrole · ${interaction.user.tag}`);
 
-    const embed = new EmbedBuilder()
-      .setColor(0x57f287)
-      .setDescription(`${target} kullanıcısına ${role} rolü verildi.`)
-      .setTimestamp();
+    const embed = baseEmbed(Theme.success)
+      .setAuthor({ name: "MODERASYON" })
+      .setTitle("Rol Verildi")
+      .setDescription(
+        [
+          line(),
+          kv("Kullanıcı", target.tag),
+          kv("Rol", `${role}`),
+          kv("Yetkili", interaction.user.tag),
+          line(),
+        ].join("\n")
+      );
 
     await interaction.reply({ embeds: [embed] });
   }
