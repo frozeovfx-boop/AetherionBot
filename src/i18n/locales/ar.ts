@@ -48,8 +48,7 @@ export const ar: Record<TranslationKey, string> = {
   "eco.daily_title": "⬡ المكافأة اليومية",
   "eco.daily_claim": "**+{amount}** 💵 أُضيفت إلى محفظتك",
   "eco.daily_balance": "الرصيد الجديد",
-  "eco.daily_wait": "مبكر جداً.
-حاول بعد **{time}**",
+  "eco.daily_wait": "مبكر جداً.\nحاول بعد **{time}**",
   "eco.insufficient": "رصيد غير كافٍ.",
   "eco.work_title": "انتهى العمل",
   "eco.work_done": "عملت كـ **{job}** وربحت **{amount}** 💵.",

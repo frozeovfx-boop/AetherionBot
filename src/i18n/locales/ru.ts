@@ -48,8 +48,7 @@ export const ru: Record<TranslationKey, string> = {
   "eco.daily_title": "⬡ Ежедневная награда",
   "eco.daily_claim": "**+{amount}** 💵 добавлено в кошелёк",
   "eco.daily_balance": "Новый баланс",
-  "eco.daily_wait": "Слишком рано.
-Через **{time}**",
+  "eco.daily_wait": "Слишком рано.\nЧерез **{time}**",
   "eco.insufficient": "Недостаточно средств.",
   "eco.work_title": "Смена завершена",
   "eco.work_done": "Вы работали как **{job}** и заработали **{amount}** 💵.",

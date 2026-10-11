@@ -48,8 +48,7 @@ export const hi: Record<TranslationKey, string> = {
   "eco.daily_title": "⬡ दैनिक इनाम",
   "eco.daily_claim": "**+{amount}** 💵 वॉलेट में जोड़े गए",
   "eco.daily_balance": "नया बैलेंस",
-  "eco.daily_wait": "बहुत जल्दी।
-**{time}** बाद कोशिश करें",
+  "eco.daily_wait": "बहुत जल्दी।\n**{time}** बाद कोशिश करें",
   "eco.insufficient": "पर्याप्त धन नहीं।",
   "eco.work_title": "काम पूरा",
   "eco.work_done": "आपने **{job}** के रूप में काम किया और **{amount}** 💵 कमाए।",

@@ -48,8 +48,7 @@ export const ja: Record<TranslationKey, string> = {
   "eco.daily_title": "⬡ デイリー報酬",
   "eco.daily_claim": "**+{amount}** 💵 をウォレットに追加",
   "eco.daily_balance": "新しい残高",
-  "eco.daily_wait": "早すぎます。
-**{time}** 後に再試行",
+  "eco.daily_wait": "早すぎます。\n**{time}** 後に再試行",
   "eco.insufficient": "残高不足。",
   "eco.work_title": "勤務完了",
   "eco.work_done": "**{job}** として働き **{amount}** 💵 稼ぎました。",
