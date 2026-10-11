@@ -1,27 +1,25 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 export default class PayCommand extends Command {
   constructor() {
     super({
       name: "pay",
-      description: "Başka bir kullanıcıya para gönder",
+      description: "Başka kullanıcıya para gönder",
       category: "economy",
       cooldown: 5,
       guildOnly: true,
       data: new SlashCommandBuilder()
         .setName("pay")
-        .setDescription("Başka bir kullanıcıya para gönder")
-        .addUserOption((opt) =>
-          opt.setName("kullanici").setDescription("Alıcı").setRequired(true)
-        )
-        .addIntegerOption((opt) =>
-          opt.setName("miktar").setDescription("Miktar").setRequired(true).setMinValue(1)
+        .setDescription("Başka kullanıcıya para gönder")
+        .addUserOption((o) => o.setName("kullanici").setDescription("Alıcı").setRequired(true))
+        .addIntegerOption((o) =>
+          o.setName("miktar").setDescription("Miktar").setRequired(true).setMinValue(1)
         )
         .toJSON(),
     });
@@ -33,29 +31,36 @@ export default class PayCommand extends Command {
     const target = interaction.options.getUser("kullanici", true);
     const amount = interaction.options.getInteger("miktar", true);
 
-    if (target.id === interaction.user.id) {
-      await interaction.reply({ content: "Kendine para gönderemezsin.", ephemeral: true });
+    if (target.bot || target.id === interaction.user.id) {
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.warning).setDescription("Geçersiz hedef.")],
+        ephemeral: true,
+      });
       return;
     }
 
-    if (target.bot) {
-      await interaction.reply({ content: "Botlara para gönderemezsin.", ephemeral: true });
-      return;
-    }
-
-    const ok = client.economy.removeWallet(interaction.guild.id, interaction.user.id, amount);
-    if (!ok) {
-      await interaction.reply({ content: "Cüzdanında yeterli para yok.", ephemeral: true });
+    if (!client.economy.removeWallet(interaction.guild.id, interaction.user.id, amount)) {
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.danger).setDescription("Yeterli paran yok.")],
+        ephemeral: true,
+      });
       return;
     }
 
     client.economy.addWallet(interaction.guild.id, target.id, amount);
 
-    const embed = new EmbedBuilder()
-      .setColor(0x57f287)
-      .setTitle("Para Gönderildi")
-      .setDescription(`${target} kullanıcısına **${amount.toLocaleString()}** 💵 gönderildi.`)
-      .setTimestamp();
+    const embed = baseEmbed(Theme.economy)
+      .setAuthor({ name: "ECONOMY" })
+      .setTitle("Transfer")
+      .setDescription(
+        [
+          line(),
+          kv("Gönderen", interaction.user.tag),
+          kv("Alıcı", target.tag),
+          kv("Miktar", `**${amount.toLocaleString()}** 💵`),
+          line(),
+        ].join("\n")
+      );
 
     await interaction.reply({ embeds: [embed] });
   }

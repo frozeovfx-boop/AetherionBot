@@ -5,13 +5,13 @@ import {
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
-import { buildModEmbed } from "../../utils/modlog.js";
+import { Theme, baseEmbed, line, code, kv } from "../../utils/embeds.js";
 
 export default class SoftbanCommand extends Command {
   constructor() {
     super({
       name: "softban",
-      description: "Kullanıcıyı yasaklayıp hemen yasağı kaldırır (mesaj temizliği için)",
+      description: "Ban + anında unban (mesaj temizliği)",
       category: "moderation",
       cooldown: 5,
       guildOnly: true,
@@ -19,21 +19,9 @@ export default class SoftbanCommand extends Command {
       clientPermissions: [PermissionFlagsBits.BanMembers],
       data: new SlashCommandBuilder()
         .setName("softban")
-        .setDescription("Kullanıcıyı yasaklayıp hemen yasağı kaldırır (mesaj temizliği için)")
-        .addUserOption((opt) =>
-          opt.setName("kullanici").setDescription("Softban uygulanacak kullanıcı").setRequired(true)
-        )
-        .addStringOption((opt) =>
-          opt.setName("sebep").setDescription("Sebep").setRequired(false)
-        )
-        .addIntegerOption((opt) =>
-          opt
-            .setName("mesaj_sil")
-            .setDescription("Kaç günlük mesajlar silinsin (0-7)")
-            .setMinValue(0)
-            .setMaxValue(7)
-            .setRequired(false)
-        )
+        .setDescription("Ban + anında unban (mesaj temizliği)")
+        .addUserOption((o) => o.setName("kullanici").setDescription("Hedef").setRequired(true))
+        .addStringOption((o) => o.setName("sebep").setDescription("Sebep").setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
         .toJSON(),
     });
@@ -44,24 +32,20 @@ export default class SoftbanCommand extends Command {
 
     const target = interaction.options.getUser("kullanici", true);
     const reason = interaction.options.getString("sebep") ?? "Softban";
-    const deleteMessageDays = interaction.options.getInteger("mesaj_sil") ?? 1;
 
-    if (target.id === interaction.user.id || target.id === client.user?.id) {
-      await interaction.reply({ content: "Geçersiz hedef.", ephemeral: true });
+    try {
+      await interaction.guild.members.ban(target.id, {
+        deleteMessageSeconds: 86_400 * 7,
+        reason: `Softban · ${reason} · ${interaction.user.tag}`,
+      });
+      await interaction.guild.members.unban(target.id, "Softban complete");
+    } catch {
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.danger).setDescription("Softban başarısız.")],
+        ephemeral: true,
+      });
       return;
     }
-
-    const member = await interaction.guild.members.fetch(target.id).catch(() => null);
-    if (member && !member.bannable) {
-      await interaction.reply({ content: "Bu kullanıcıyı softban yapamıyorum.", ephemeral: true });
-      return;
-    }
-
-    await interaction.guild.members.ban(target.id, {
-      reason: `Softban | ${reason} | Yetkili: ${interaction.user.tag}`,
-      deleteMessageSeconds: deleteMessageDays * 24 * 60 * 60,
-    });
-    await interaction.guild.members.unban(target.id, `Softban kaldırıldı | ${interaction.user.tag}`);
 
     const modCase = client.cases.create({
       guildId: interaction.guild.id,
@@ -71,14 +55,21 @@ export default class SoftbanCommand extends Command {
       reason,
     });
 
-    const embed = buildModEmbed({
-      type: "softban",
-      userTag: target.tag,
-      userId: target.id,
-      moderatorTag: interaction.user.tag,
-      reason,
-      caseId: modCase.id,
-    });
+    const embed = baseEmbed(Theme.warning)
+      .setAuthor({ name: "MODERASYON" })
+      .setTitle("Softban")
+      .setThumbnail(target.displayAvatarURL({ size: 256 }))
+      .setDescription(
+        [
+          line(),
+          kv("Kullanıcı", target.tag),
+          kv("ID", code(target.id)),
+          kv("Yetkili", interaction.user.tag),
+          kv("Sebep", reason),
+          line(),
+        ].join("\n")
+      )
+      .setFooter({ text: `Case #${modCase.id} · Aetherion` });
 
     await interaction.reply({ embeds: [embed] });
   }

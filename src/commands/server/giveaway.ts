@@ -2,11 +2,11 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
-  EmbedBuilder,
   TextChannel,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 function parseDuration(input: string): number | null {
   const match = input.match(/^(\d+)(s|m|h|d)$/i);
@@ -29,14 +29,12 @@ export default class GiveawayCommand extends Command {
       data: new SlashCommandBuilder()
         .setName("giveaway")
         .setDescription("Çekiliş başlatır")
-        .addStringOption((opt) =>
-          opt.setName("odul").setDescription("Ödül").setRequired(true)
+        .addStringOption((o) => o.setName("odul").setDescription("Ödül").setRequired(true))
+        .addStringOption((o) =>
+          o.setName("sure").setDescription("Süre (30m, 2h, 1d)").setRequired(true)
         )
-        .addStringOption((opt) =>
-          opt.setName("sure").setDescription("Süre (örnek: 1h, 30m, 1d)").setRequired(true)
-        )
-        .addIntegerOption((opt) =>
-          opt.setName("kazanan").setDescription("Kazanan sayısı").setRequired(false).setMinValue(1).setMaxValue(20)
+        .addIntegerOption((o) =>
+          o.setName("kazanan").setDescription("Kazanan sayısı").setMinValue(1).setMaxValue(20).setRequired(false)
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
         .toJSON(),
@@ -53,7 +51,9 @@ export default class GiveawayCommand extends Command {
 
     if (!ms || ms < 10_000 || ms > 30 * 86_400_000) {
       await interaction.reply({
-        content: "Geçersiz süre. Örnek: `30m`, `2h`, `1d` (min 10s, max 30 gün)",
+        embeds: [
+          baseEmbed(Theme.warning).setDescription("Geçersiz süre. Örnek: `30m` `2h` `1d`"),
+        ],
         ephemeral: true,
       });
       return;
@@ -61,16 +61,26 @@ export default class GiveawayCommand extends Command {
 
     const endsAt = Date.now() + ms;
 
-    const embed = new EmbedBuilder()
-      .setColor(0xfee75c)
-      .setTitle("🎉 Çekiliş")
+    const embed = baseEmbed(Theme.economy)
+      .setAuthor({ name: "GIVEAWAY" })
+      .setTitle("Çekiliş")
       .setDescription(
-        `**Ödül:** ${prize}\n**Kazanan:** ${winners} kişi\n**Bitiş:** <t:${Math.floor(endsAt / 1000)}:R>\n\nKatılmak için 🎉 emoji'sine tıkla!`
+        [
+          line(),
+          kv("Ödül", prize),
+          kv("Kazanan", `${winners} kişi`),
+          kv("Bitiş", `<t:${Math.floor(endsAt / 1000)}:R>`),
+          line(),
+          "Katılmak için 🎉 tepkisine tıkla.",
+        ].join("\n")
       )
-      .setFooter({ text: `Başlatan: ${interaction.user.tag}` })
+      .setFooter({ text: `Başlatan · ${interaction.user.tag}` })
       .setTimestamp(endsAt);
 
-    await interaction.reply({ content: "Çekiliş başlatıldı.", ephemeral: true });
+    await interaction.reply({
+      embeds: [baseEmbed(Theme.success).setDescription("Çekiliş başlatıldı.")],
+      ephemeral: true,
+    });
 
     const channel = interaction.channel as TextChannel;
     const msg = await channel.send({ embeds: [embed] });
@@ -84,7 +94,9 @@ export default class GiveawayCommand extends Command {
         const entrants = users?.filter((u) => !u.bot).map((u) => u) ?? [];
 
         if (entrants.length === 0) {
-          await msg.reply("Çekilişe kimse katılmadı.");
+          await msg.reply({
+            embeds: [baseEmbed(Theme.mute).setDescription("Kimse katılmadı.")],
+          });
           return;
         }
 
@@ -95,13 +107,21 @@ export default class GiveawayCommand extends Command {
           selected.push(pool.splice(idx, 1)[0]!.toString());
         }
 
-        const result = new EmbedBuilder()
-          .setColor(0x57f287)
-          .setTitle("🎉 Çekiliş Bitti")
-          .setDescription(`**Ödül:** ${prize}\n**Kazananlar:** ${selected.join(", ")}`)
-          .setTimestamp();
-
-        await msg.reply({ embeds: [result] });
+        await msg.reply({
+          embeds: [
+            baseEmbed(Theme.success)
+              .setAuthor({ name: "GIVEAWAY" })
+              .setTitle("Sonuç")
+              .setDescription(
+                [
+                  line(),
+                  kv("Ödül", prize),
+                  kv("Kazananlar", selected.join(", ")),
+                  line(),
+                ].join("\n")
+              ),
+          ],
+        });
       } catch (error) {
         client.logger.error(error, "Giveaway end error");
       }

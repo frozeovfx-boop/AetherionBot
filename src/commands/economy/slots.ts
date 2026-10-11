@@ -1,10 +1,10 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv } from "../../utils/embeds.js";
 
 const SYMBOLS = ["🍒", "🍋", "🍊", "🍇", "⭐", "💎", "7️⃣"];
 
@@ -19,8 +19,8 @@ export default class SlotsCommand extends Command {
       data: new SlashCommandBuilder()
         .setName("slots")
         .setDescription("Slot makinesi")
-        .addIntegerOption((opt) =>
-          opt.setName("miktar").setDescription("Bahis").setRequired(true).setMinValue(10)
+        .addIntegerOption((o) =>
+          o.setName("miktar").setDescription("Bahis").setRequired(true).setMinValue(10)
         )
         .toJSON(),
     });
@@ -31,7 +31,10 @@ export default class SlotsCommand extends Command {
 
     const bet = interaction.options.getInteger("miktar", true);
     if (!client.economy.removeWallet(interaction.guild.id, interaction.user.id, bet)) {
-      await interaction.reply({ content: "Yeterli paran yok.", ephemeral: true });
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.danger).setDescription("Yeterli paran yok.")],
+        ephemeral: true,
+      });
       return;
     }
 
@@ -39,18 +42,26 @@ export default class SlotsCommand extends Command {
     const b = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]!;
     const c = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]!;
 
-    let multiplier = 0;
-    if (a === b && b === c) multiplier = a === "7️⃣" ? 10 : a === "💎" ? 7 : 5;
-    else if (a === b || b === c || a === c) multiplier = 2;
+    let mult = 0;
+    if (a === b && b === c) mult = a === "7️⃣" ? 10 : a === "💎" ? 7 : 5;
+    else if (a === b || b === c || a === c) mult = 2;
 
-    const win = bet * multiplier;
+    const win = bet * mult;
     if (win > 0) client.economy.addWallet(interaction.guild.id, interaction.user.id, win);
 
-    const embed = new EmbedBuilder()
-      .setColor(win > 0 ? 0x57f287 : 0xed4245)
-      .setTitle("🎰 Slots")
-      .setDescription(`**[ ${a} | ${b} | ${c} ]**\n\n${win > 0 ? `Kazanç: **+${win.toLocaleString()}** 💵` : `Kaybettin: **-${bet.toLocaleString()}** 💵`}`)
-      .setTimestamp();
+    const embed = baseEmbed(win > 0 ? Theme.success : Theme.danger)
+      .setAuthor({ name: "ECONOMY" })
+      .setTitle("Slots")
+      .setDescription(
+        [
+          line(),
+          `**[  ${a}  |  ${b}  |  ${c}  ]**`,
+          "",
+          kv("Bahis", `${bet.toLocaleString()} 💵`),
+          kv("Sonuç", win > 0 ? `**+${win.toLocaleString()}** 💵` : `**−${bet.toLocaleString()}** 💵`),
+          line(),
+        ].join("\n")
+      );
 
     await interaction.reply({ embeds: [embed] });
   }

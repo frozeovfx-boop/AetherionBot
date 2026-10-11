@@ -5,27 +5,23 @@ import {
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
-import { buildModEmbed } from "../../utils/modlog.js";
+import { Theme, baseEmbed, line, code, kv } from "../../utils/embeds.js";
 
 export default class UnbanCommand extends Command {
   constructor() {
     super({
       name: "unban",
-      description: "Bir kullanıcının yasağını kaldırır",
+      description: "Yasağı kaldırır",
       category: "moderation",
-      cooldown: 5,
+      cooldown: 3,
       guildOnly: true,
       permissions: [PermissionFlagsBits.BanMembers],
       clientPermissions: [PermissionFlagsBits.BanMembers],
       data: new SlashCommandBuilder()
         .setName("unban")
-        .setDescription("Bir kullanıcının yasağını kaldırır")
-        .addStringOption((opt) =>
-          opt.setName("kullanici_id").setDescription("Kullanıcı ID").setRequired(true)
-        )
-        .addStringOption((opt) =>
-          opt.setName("sebep").setDescription("Sebep").setRequired(false)
-        )
+        .setDescription("Yasağı kaldırır")
+        .addStringOption((o) => o.setName("id").setDescription("Kullanıcı ID").setRequired(true))
+        .addStringOption((o) => o.setName("sebep").setDescription("Sebep").setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
         .toJSON(),
     });
@@ -34,37 +30,48 @@ export default class UnbanCommand extends Command {
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) return;
 
-    const userId = interaction.options.getString("kullanici_id", true);
-    const reason = interaction.options.getString("sebep") ?? "Sebep belirtilmedi";
+    const id = interaction.options.getString("id", true);
+    const reason = interaction.options.getString("sebep") ?? "Belirtilmedi";
 
-    if (!/^\d{17,20}$/.test(userId)) {
-      await interaction.reply({ content: "Geçersiz kullanıcı ID'si.", ephemeral: true });
+    if (!/^\d{17,20}$/.test(id)) {
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.warning).setDescription("Geçersiz ID.")],
+        ephemeral: true,
+      });
       return;
     }
 
     try {
-      await interaction.guild.members.unban(userId, `${reason} | Yetkili: ${interaction.user.tag}`);
+      await interaction.guild.members.unban(id, `${reason} · ${interaction.user.tag}`);
     } catch {
-      await interaction.reply({ content: "Bu kullanıcı yasaklı değil veya ID hatalı.", ephemeral: true });
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.danger).setDescription("Yasak kaldırılamadı / kullanıcı yasaklı değil.")],
+        ephemeral: true,
+      });
       return;
     }
 
     const modCase = client.cases.create({
       guildId: interaction.guild.id,
-      userId,
+      userId: id,
       moderatorId: interaction.user.id,
       type: "unban",
       reason,
     });
 
-    const embed = buildModEmbed({
-      type: "unban",
-      userTag: userId,
-      userId,
-      moderatorTag: interaction.user.tag,
-      reason,
-      caseId: modCase.id,
-    });
+    const embed = baseEmbed(Theme.success)
+      .setAuthor({ name: "MODERASYON" })
+      .setTitle("Yasak Kaldırıldı")
+      .setDescription(
+        [
+          line(),
+          kv("ID", code(id)),
+          kv("Yetkili", interaction.user.tag),
+          kv("Sebep", reason),
+          line(),
+        ].join("\n")
+      )
+      .setFooter({ text: `Case #${modCase.id} · Aetherion` });
 
     await interaction.reply({ embeds: [embed] });
   }
