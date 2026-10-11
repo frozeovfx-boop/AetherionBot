@@ -2,16 +2,16 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 export default class NicknameCommand extends Command {
   constructor() {
     super({
       name: "nickname",
-      description: "Bir kullanıcının takma adını değiştirir",
+      description: "Kullanıcı takma adını değiştirir",
       category: "moderation",
       cooldown: 3,
       guildOnly: true,
@@ -19,13 +19,9 @@ export default class NicknameCommand extends Command {
       clientPermissions: [PermissionFlagsBits.ManageNicknames],
       data: new SlashCommandBuilder()
         .setName("nickname")
-        .setDescription("Bir kullanıcının takma adını değiştirir")
-        .addUserOption((opt) =>
-          opt.setName("kullanici").setDescription("Hedef kullanıcı").setRequired(true)
-        )
-        .addStringOption((opt) =>
-          opt.setName("takma_ad").setDescription("Yeni takma ad (boş bırakırsan sıfırlar)").setRequired(false)
-        )
+        .setDescription("Kullanıcı takma adını değiştirir")
+        .addUserOption((o) => o.setName("kullanici").setDescription("Hedef").setRequired(true))
+        .addStringOption((o) => o.setName("takma_ad").setDescription("Yeni ad (boş = sıfırla)").setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageNicknames)
         .toJSON(),
     });
@@ -35,31 +31,31 @@ export default class NicknameCommand extends Command {
     if (!interaction.guild) return;
 
     const target = interaction.options.getUser("kullanici", true);
-    const nickname = interaction.options.getString("takma_ad");
-
+    const nick = interaction.options.getString("takma_ad");
     const member = await interaction.guild.members.fetch(target.id).catch(() => null);
-    if (!member) {
-      await interaction.reply({ content: "Kullanıcı sunucuda bulunamadı.", ephemeral: true });
+
+    if (!member?.manageable) {
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.danger).setDescription("Bu kullanıcının adı değiştirilemez.")],
+        ephemeral: true,
+      });
       return;
     }
 
-    if (!member.manageable) {
-      await interaction.reply({ content: "Bu kullanıcının takma adını değiştiremiyorum.", ephemeral: true });
-      return;
-    }
+    await member.setNickname(nick, `nickname · ${interaction.user.tag}`);
 
-    const oldNick = member.nickname ?? member.user.username;
-    await member.setNickname(nickname, `Nickname | Yetkili: ${interaction.user.tag}`);
-
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
-      .setTitle("Takma Ad Güncellendi")
-      .addFields(
-        { name: "Kullanıcı", value: `${target.tag}`, inline: true },
-        { name: "Eski", value: oldNick, inline: true },
-        { name: "Yeni", value: nickname ?? "Sıfırlandı", inline: true }
-      )
-      .setTimestamp();
+    const embed = baseEmbed(Theme.info)
+      .setAuthor({ name: "MODERASYON" })
+      .setTitle("Takma Ad")
+      .setDescription(
+        [
+          line(),
+          kv("Kullanıcı", target.tag),
+          kv("Yeni ad", nick ? code(nick) : "*sıfırlandı*"),
+          kv("Yetkili", interaction.user.tag),
+          line(),
+        ].join("\n")
+      );
 
     await interaction.reply({ embeds: [embed] });
   }

@@ -2,26 +2,24 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   PermissionFlagsBits,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
-export default class ClearWarnsCommand extends Command {
+export default class ClearwarnsCommand extends Command {
   constructor() {
     super({
       name: "clearwarns",
-      description: "Bir kullanıcının uyarılarını temizler",
+      description: "Kullanıcının uyarılarını temizler",
       category: "moderation",
       cooldown: 5,
       guildOnly: true,
       permissions: [PermissionFlagsBits.ModerateMembers],
       data: new SlashCommandBuilder()
         .setName("clearwarns")
-        .setDescription("Bir kullanıcının uyarılarını temizler")
-        .addUserOption((opt) =>
-          opt.setName("kullanici").setDescription("Hedef kullanıcı").setRequired(true)
-        )
+        .setDescription("Kullanıcının uyarılarını temizler")
+        .addUserOption((o) => o.setName("kullanici").setDescription("Hedef").setRequired(true))
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
         .toJSON(),
     });
@@ -31,13 +29,28 @@ export default class ClearWarnsCommand extends Command {
     if (!interaction.guild) return;
 
     const target = interaction.options.getUser("kullanici", true);
-    const cleared = client.cases.clearUserWarns(interaction.guild.id, target.id);
+    const warns = client.cases
+      .getUserCases(interaction.guild.id, target.id)
+      .filter((c) => c.type === "warn" && c.active);
 
-    const embed = new EmbedBuilder()
-      .setColor(0x57f287)
+    for (const w of warns) {
+      w.active = false;
+    }
+
+    const embed = baseEmbed(Theme.success)
+      .setAuthor({ name: "MODERASYON" })
       .setTitle("Uyarılar Temizlendi")
-      .setDescription(`${target.tag} kullanıcısının **${cleared}** aktif uyarısı temizlendi.`)
-      .setTimestamp();
+      .setThumbnail(target.displayAvatarURL({ size: 256 }))
+      .setDescription(
+        [
+          line(),
+          kv("Kullanıcı", target.tag),
+          kv("ID", code(target.id)),
+          kv("Temizlenen", `**${warns.length}** uyarı`),
+          kv("Yetkili", interaction.user.tag),
+          line(),
+        ].join("\n")
+      );
 
     await interaction.reply({ embeds: [embed] });
   }

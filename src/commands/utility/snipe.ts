@@ -1,11 +1,10 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
-  PermissionFlagsBits,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv } from "../../utils/embeds.js";
 import { snipeCache } from "../../utils/snipe.js";
 
 export default class SnipeCommand extends Command {
@@ -16,37 +15,36 @@ export default class SnipeCommand extends Command {
       category: "utility",
       cooldown: 5,
       guildOnly: true,
-      permissions: [PermissionFlagsBits.ManageMessages],
-      data: new SlashCommandBuilder()
-        .setName("snipe")
-        .setDescription("Son silinen mesajı gösterir")
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
-        .toJSON(),
+      data: new SlashCommandBuilder().setName("snipe").setDescription("Son silinen mesajı gösterir").toJSON(),
     });
   }
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
-    if (!interaction.channel) return;
+    if (!interaction.channelId) return;
+    const sniped = snipeCache.get(interaction.channelId);
 
-    const data = snipeCache.get(interaction.channel.id);
-    if (!data) {
-      await interaction.reply({ content: "Bu kanalda silinen mesaj yok.", ephemeral: true });
+    if (!sniped) {
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.mute).setDescription("Silinen mesaj yok.")],
+        ephemeral: true,
+      });
       return;
     }
 
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
-      .setAuthor({ name: data.authorTag, iconURL: data.authorAvatar || undefined })
-      .setDescription(data.content.slice(0, 2000))
-      .setFooter({ text: `Silindi` })
-      .setTimestamp(data.createdAt);
+    const embed = baseEmbed(Theme.primary)
+      .setAuthor({ name: sniped.authorTag, iconURL: sniped.authorAvatar || undefined })
+      .setTitle("Snipe")
+      .setDescription(
+        [
+          line(),
+          sniped.content?.slice(0, 1000) || "*içerik yok*",
+          line(),
+          kv("Zaman", `<t:${Math.floor(sniped.createdAt.getTime() / 1000)}:R>`),
+          line(),
+        ].join("\n")
+      );
 
-    if (data.attachments.length > 0) {
-      embed.addFields({ name: "Ekler", value: data.attachments.map((u) => `[Dosya](${u})`).join("\n") });
-      if (data.attachments[0]?.match(/\.(png|jpg|jpeg|gif|webp)$/i)) {
-        embed.setImage(data.attachments[0]);
-      }
-    }
+    if (sniped.attachments[0]) embed.setImage(sniped.attachments[0]);
 
     await interaction.reply({ embeds: [embed] });
   }

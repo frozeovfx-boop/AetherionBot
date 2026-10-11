@@ -1,43 +1,35 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line } from "../../utils/embeds.js";
 
 const ANSWERS = [
   "Kesinlikle.",
-  "Hiç şüphesiz.",
-  "Evet, kesin.",
-  "Gördüğüm kadarıyla evet.",
-  "Büyük ihtimalle.",
   "Evet.",
-  "İşaretler eveti gösteriyor.",
-  "Belirsiz, tekrar dene.",
+  "Büyük ihtimalle.",
+  "Belki.",
+  "Emin değilim.",
   "Sonra sor.",
-  "Şimdi söylemesem daha iyi.",
-  "Şu an tahmin edemem.",
-  "Konsantre ol ve tekrar sor.",
-  "Cevabım hayır.",
-  "Kaynaklarım hayır diyor.",
-  "Pek iyi görünmüyor.",
-  "Çok şüpheli.",
+  "Hayır.",
+  "Mümkün değil.",
+  "Asla.",
+  "Şansın yaver gider.",
 ];
 
 export default class EightBallCommand extends Command {
   constructor() {
     super({
       name: "8ball",
-      description: "Sihirli 8ball'a soru sor",
+      description: "Sihirli 8ball",
       category: "fun",
       cooldown: 3,
       data: new SlashCommandBuilder()
         .setName("8ball")
-        .setDescription("Sihirli 8ball'a soru sor")
-        .addStringOption((opt) =>
-          opt.setName("soru").setDescription("Sorun").setRequired(true)
-        )
+        .setDescription("Sihirli 8ball")
+        .addStringOption((o) => o.setName("soru").setDescription("Soru").setRequired(true))
         .toJSON(),
     });
   }
@@ -46,14 +38,17 @@ export default class EightBallCommand extends Command {
     const question = interaction.options.getString("soru", true);
     const answer = ANSWERS[Math.floor(Math.random() * ANSWERS.length)]!;
 
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
-      .setTitle("🎱 8ball")
-      .addFields(
-        { name: "Soru", value: question },
-        { name: "Cevap", value: answer }
-      )
-      .setTimestamp();
+    const embed = baseEmbed(Theme.fun)
+      .setAuthor({ name: "8BALL" })
+      .setDescription(
+        [
+          line(),
+          `**Soru**\n${question.slice(0, 300)}`,
+          "",
+          `**Cevap**\n${answer}`,
+          line(),
+        ].join("\n")
+      );
 
     await interaction.reply({ embeds: [embed] });
   }

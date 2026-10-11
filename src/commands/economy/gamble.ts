@@ -1,10 +1,10 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line, kv } from "../../utils/embeds.js";
 
 export default class GambleCommand extends Command {
   constructor() {
@@ -17,8 +17,8 @@ export default class GambleCommand extends Command {
       data: new SlashCommandBuilder()
         .setName("gamble")
         .setDescription("Para bahis yap (50/50)")
-        .addIntegerOption((opt) =>
-          opt.setName("miktar").setDescription("Bahis miktarı").setRequired(true).setMinValue(10)
+        .addIntegerOption((o) =>
+          o.setName("miktar").setDescription("Bahis").setRequired(true).setMinValue(10)
         )
         .toJSON(),
     });
@@ -27,31 +27,30 @@ export default class GambleCommand extends Command {
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) return;
 
-    const amount = interaction.options.getInteger("miktar", true);
-    const ok = client.economy.removeWallet(interaction.guild.id, interaction.user.id, amount);
-
-    if (!ok) {
-      await interaction.reply({ content: "Cüzdanında yeterli para yok.", ephemeral: true });
+    const bet = interaction.options.getInteger("miktar", true);
+    if (!client.economy.removeWallet(interaction.guild.id, interaction.user.id, bet)) {
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.danger).setDescription("Yeterli paran yok.")],
+        ephemeral: true,
+      });
       return;
     }
 
     const win = Math.random() < 0.45;
-    if (win) {
-      const prize = amount * 2;
-      client.economy.addWallet(interaction.guild.id, interaction.user.id, prize);
-      const embed = new EmbedBuilder()
-        .setColor(0x57f287)
-        .setTitle("Kazandın!")
-        .setDescription(`**+${prize.toLocaleString()}** 💵 kazandın.`)
-        .setTimestamp();
-      await interaction.reply({ embeds: [embed] });
-    } else {
-      const embed = new EmbedBuilder()
-        .setColor(0xed4245)
-        .setTitle("Kaybettin")
-        .setDescription(`**-${amount.toLocaleString()}** 💵 kaybettin.`)
-        .setTimestamp();
-      await interaction.reply({ embeds: [embed] });
-    }
+    if (win) client.economy.addWallet(interaction.guild.id, interaction.user.id, bet * 2);
+
+    const embed = baseEmbed(win ? Theme.success : Theme.danger)
+      .setAuthor({ name: "ECONOMY" })
+      .setTitle(win ? "Kazandın" : "Kaybettin")
+      .setDescription(
+        [
+          line(),
+          kv("Bahis", `${bet.toLocaleString()} 💵`),
+          kv("Sonuç", win ? `**+${(bet * 2).toLocaleString()}** 💵` : `**−${bet.toLocaleString()}** 💵`),
+          line(),
+        ].join("\n")
+      );
+
+    await interaction.reply({ embeds: [embed] });
   }
 }
