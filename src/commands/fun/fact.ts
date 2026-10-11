@@ -1,45 +1,35 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
+import { Theme, baseEmbed, line } from "../../utils/embeds.js";
 
 const FACTS = [
-  "Balıklar susuz kalınca susarlar ama ağlayamazlar.",
-  "Bir ahtapotun üç kalbi vardır.",
-  "Bal ballı değildir — arılar nektarı işler.",
+  "Bal balları asla uyumaz; kanat çırparak havalandırmayı sağlarlar.",
+  "Ahtapotların 3 kalbi vardır.",
+  "Bir günde 1 milyar+ yıldırım düşer.",
   "Discord 2015'te kuruldu.",
-  "İnsan vücudunda yaklaşık 37 trilyon hücre vardır.",
-  "Venüs, Güneş Sistemi'ndeki en sıcak gezegendir.",
-  "Balinalar uyurken bir beyin yarımküresi uyanık kalır.",
-  "Dünyadaki en uzun nehir Nil'dir (tartışmalı: Amazon).",
-  "Bir günde Google'da 8 milyar+ arama yapılır.",
-  "Kangurular geri geri yürüyemez.",
+  "TypeScript, JavaScript'in üst kümesidir.",
 ];
 
 export default class FactCommand extends Command {
   constructor() {
     super({
       name: "fact",
-      description: "Rastgele ilginç bilgi",
+      description: "Rastgele bilgi",
       category: "fun",
       cooldown: 3,
-      data: new SlashCommandBuilder()
-        .setName("fact")
-        .setDescription("Rastgele ilginç bilgi")
-        .toJSON(),
+      data: new SlashCommandBuilder().setName("fact").setDescription("Rastgele bilgi").toJSON(),
     });
   }
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const fact = FACTS[Math.floor(Math.random() * FACTS.length)]!;
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
-      .setTitle("📚 Fact")
-      .setDescription(fact)
-      .setTimestamp();
+    const embed = baseEmbed(Theme.fun)
+      .setAuthor({ name: "FACT" })
+      .setDescription([line(), fact, line()].join("\n"));
     await interaction.reply({ embeds: [embed] });
   }
 }
