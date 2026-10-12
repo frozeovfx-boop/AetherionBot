@@ -1,8 +1,12 @@
-import { Events, Message, Collection, PermissionFlagsBits } from "discord.js";
+import { Events, Message, Collection } from "discord.js";
 import { Event } from "../structures/Event.js";
 import type { AetherionClient } from "../client/AetherionClient.js";
 import { afkMap } from "../commands/utility/afk.js";
 import { PrefixInteraction, optionNamesFromData } from "../utils/PrefixInteraction.js";
+import { Theme, baseEmbed, line } from "../utils/embeds.js";
+
+/** channelId -> last sticky message id */
+const stickyMsgs = new Map<string, string>();
 
 export default class MessageCreateEvent extends Event<typeof Events.MessageCreate> {
   constructor() {
@@ -11,6 +15,9 @@ export default class MessageCreateEvent extends Event<typeof Events.MessageCreat
 
   public async execute(client: AetherionClient, message: Message): Promise<void> {
     if (message.author.bot || !message.guild) return;
+
+    // Seen tracker
+    client.seen.touch(message.author.id);
 
     // AFK
     if (afkMap.has(message.author.id)) {
@@ -28,6 +35,27 @@ export default class MessageCreateEvent extends Event<typeof Events.MessageCreat
       }
     }
 
+    // Sticky repost
+    const stickyContent = client.settings.get(message.guild.id).sticky[message.channel.id];
+    if (stickyContent && message.channel.isTextBased() && !message.channel.isDMBased()) {
+      const prev = stickyMsgs.get(message.channel.id);
+      if (prev) {
+        await message.channel.messages.delete(prev).catch(() => null);
+      }
+      try {
+        const sent = await message.channel.send({
+          embeds: [
+            baseEmbed(Theme.info)
+              .setAuthor({ name: "STICKY" })
+              .setDescription([line(), stickyContent, line()].join("\n")),
+          ],
+        });
+        stickyMsgs.set(message.channel.id, sent.id);
+      } catch {
+        /* ignore */
+      }
+    }
+
     const prefix = client.settings.getPrefix(message.guild.id);
     if (!message.content.startsWith(prefix)) return;
 
@@ -35,19 +63,38 @@ export default class MessageCreateEvent extends Event<typeof Events.MessageCreat
     if (!raw) return;
 
     const parts = raw.split(/\s+/);
-    let name = parts.shift()?.toLowerCase();
+    const name = parts.shift()?.toLowerCase();
     if (!name) return;
 
-    let command = client.commands.get(name);
-
-    // Subcommand-style: autorole ekle → still command "autorole"
-    if (!command && parts.length > 0) {
-      // keep as is
+    // Built-in: tag shortcut !t <name> or exact tag name as command
+    const tags = client.settings.get(message.guild.id).tags;
+    if (name === "t" || name === "tags") {
+      const tagName = parts[0]?.toLowerCase();
+      if (tagName && tags[tagName]) {
+        await message.reply({
+          embeds: [
+            baseEmbed(Theme.primary)
+              .setAuthor({ name: `TAG · ${tagName}` })
+              .setDescription([line(), tags[tagName], line()].join("\n")),
+          ],
+        });
+        return;
+      }
+    }
+    if (tags[name]) {
+      await message.reply({
+        embeds: [
+          baseEmbed(Theme.primary)
+            .setAuthor({ name: `TAG · ${name}` })
+            .setDescription([line(), tags[name], line()].join("\n")),
+        ],
+      });
+      return;
     }
 
+    const command = client.commands.get(name);
     if (!command) return;
 
-    // Permissions (member)
     if (command.permissions.length > 0 && message.member) {
       const missing = message.member.permissions.missing(command.permissions);
       if (missing.length > 0) {
@@ -61,7 +108,6 @@ export default class MessageCreateEvent extends Event<typeof Events.MessageCreat
       return;
     }
 
-    // Cooldown
     if (!client.cooldowns.has(command.name)) {
       client.cooldowns.set(command.name, new Collection());
     }

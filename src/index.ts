@@ -14,7 +14,9 @@ async function main() {
     await client.settings.init(client.config.PREFIX);
     bindGuildSettings(client.settings);
     await client.music.init();
-    logger.info("Stores ready: economy · cases · inventory · guilds");
+    await client.seen.init();
+    await client.capsules.init();
+    logger.info("Stores ready: economy · cases · inventory · guilds · seen · capsules");
 
     await loadEvents(client);
     await loadCommands(client);

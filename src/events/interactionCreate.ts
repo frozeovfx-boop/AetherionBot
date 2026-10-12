@@ -3,6 +3,7 @@ import {
   ChatInputCommandInteraction,
   Collection,
   ButtonInteraction,
+  ModalSubmitInteraction,
   ChannelType,
   PermissionFlagsBits,
   EmbedBuilder,
@@ -21,7 +22,7 @@ export default class InteractionCreateEvent extends Event<typeof Events.Interact
 
   public async execute(
     client: AetherionClient,
-    interaction: ChatInputCommandInteraction | ButtonInteraction
+    interaction: ChatInputCommandInteraction | ButtonInteraction | ModalSubmitInteraction
   ): Promise<void> {
     if (interaction.isButton() && interaction.customId === "ticket_create") {
       await handleTicketCreate(client, interaction);
@@ -30,6 +31,11 @@ export default class InteractionCreateEvent extends Event<typeof Events.Interact
 
     if (interaction.isButton() && interaction.customId === "ticket_close") {
       await handleTicketClose(interaction);
+      return;
+    }
+
+    if (interaction.isModalSubmit() && interaction.customId === "confession_modal") {
+      await handleConfession(client, interaction);
       return;
     }
 
@@ -156,4 +162,36 @@ async function handleTicketClose(interaction: ButtonInteraction): Promise<void> 
       // already deleted
     }
   }, 5000);
+}
+
+async function handleConfession(client: AetherionClient, interaction: ModalSubmitInteraction): Promise<void> {
+  if (!interaction.guild) return;
+  const cfg = client.settings.get(interaction.guild.id);
+  if (!cfg.confessionChannelId) {
+    await interaction.reply({ content: "İtiraf kanalı ayarlı değil.", ephemeral: true });
+    return;
+  }
+
+  const text = interaction.fields.getTextInputValue("confession_text");
+  try {
+    const channel = await client.channels.fetch(cfg.confessionChannelId);
+    if (!channel || !channel.isTextBased() || channel.isDMBased()) {
+      await interaction.reply({ content: "Kanal bulunamadı.", ephemeral: true });
+      return;
+    }
+
+    const { Theme, baseEmbed, line } = await import("../utils/embeds.js");
+    await channel.send({
+      embeds: [
+        baseEmbed(Theme.info)
+          .setAuthor({ name: "ANONİM İTİRAF" })
+          .setDescription([line(), text.slice(0, 1500), line()].join("\n")),
+      ],
+    });
+
+    await interaction.reply({ content: "İtirafın anonim olarak gönderildi.", ephemeral: true });
+  } catch (err) {
+    client.logger.error(err, "confession failed");
+    await interaction.reply({ content: "Gönderilemedi.", ephemeral: true });
+  }
 }

@@ -12,6 +12,8 @@ import { EconomyManager } from "../database/EconomyManager.js";
 import { GuildSettings } from "../database/GuildSettings.js";
 import { InventoryManager } from "../database/InventoryManager.js";
 import { MusicManager } from "../music/MusicManager.js";
+import { SeenManager } from "../database/SeenManager.js";
+import { CapsuleManager } from "../database/CapsuleManager.js";
 
 export class AetherionClient extends Client {
   public commands = new Collection<string, Command>();
@@ -23,6 +25,8 @@ export class AetherionClient extends Client {
   public readonly inventory = new InventoryManager();
   public readonly settings = new GuildSettings();
   public readonly music = new MusicManager();
+  public readonly seen = new SeenManager();
+  public readonly capsules = new CapsuleManager();
 
   constructor() {
     super({

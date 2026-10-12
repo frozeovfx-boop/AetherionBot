@@ -10,6 +10,11 @@ export interface GuildConfig {
   welcomeMessage: string;
   leaveMessage: string;
   autoroleIds: string[];
+  starboardChannelId: string | null;
+  starboardMin: number;
+  confessionChannelId: string | null;
+  sticky: Record<string, string>; // channelId -> content
+  tags: Record<string, string>; // name -> content
 }
 
 type SettingsDump = Record<string, GuildConfig>;
@@ -22,11 +27,13 @@ const DEFAULTS: GuildConfig = {
   welcomeMessage: "Hoş geldin {user} — **{server}** ailesine katıldın. Üye #{count}",
   leaveMessage: "**{user}** sunucudan ayrıldı.",
   autoroleIds: [],
+  starboardChannelId: null,
+  starboardMin: 3,
+  confessionChannelId: null,
+  sticky: {},
+  tags: {},
 };
 
-/**
- * Per-guild settings with JSON persistence.
- */
 export class GuildSettings {
   private data = new Collection<string, GuildConfig>();
   private store = new JsonStore<SettingsDump>("guilds.json");
@@ -37,7 +44,14 @@ export class GuildSettings {
     this.defaults.prefix = defaultPrefix;
     const loaded = await this.store.load({});
     for (const [id, cfg] of Object.entries(loaded)) {
-      this.data.set(id, { ...DEFAULTS, ...cfg, autoroleIds: cfg.autoroleIds ?? [] });
+      this.data.set(id, {
+        ...DEFAULTS,
+        ...cfg,
+        autoroleIds: cfg.autoroleIds ?? [],
+        sticky: cfg.sticky ?? {},
+        tags: cfg.tags ?? {},
+        starboardMin: cfg.starboardMin ?? 3,
+      });
     }
     this.ready = true;
   }
@@ -50,7 +64,7 @@ export class GuildSettings {
   }
 
   public get(guildId: string): GuildConfig {
-    return this.data.get(guildId) ?? { ...this.defaults };
+    return this.data.get(guildId) ?? { ...this.defaults, sticky: {}, tags: {} };
   }
 
   private mutate(guildId: string, patch: Partial<GuildConfig>): GuildConfig {
@@ -98,6 +112,31 @@ export class GuildSettings {
       guildId,
       this.get(guildId).autoroleIds.filter((id) => id !== roleId)
     );
+  }
+
+  public setStarboard(guildId: string, channelId: string | null, min?: number): void {
+    const patch: Partial<GuildConfig> = { starboardChannelId: channelId };
+    if (min !== undefined) patch.starboardMin = min;
+    this.mutate(guildId, patch);
+  }
+
+  public setConfession(guildId: string, channelId: string | null): void {
+    this.mutate(guildId, { confessionChannelId: channelId });
+  }
+
+  public setSticky(guildId: string, channelId: string, content: string | null): void {
+    const sticky = { ...this.get(guildId).sticky };
+    if (content === null) delete sticky[channelId];
+    else sticky[channelId] = content;
+    this.mutate(guildId, { sticky });
+  }
+
+  public setTag(guildId: string, name: string, content: string | null): void {
+    const tags = { ...this.get(guildId).tags };
+    const key = name.toLowerCase();
+    if (content === null) delete tags[key];
+    else tags[key] = content;
+    this.mutate(guildId, { tags });
   }
 
   public getPrefix(guildId: string): string {

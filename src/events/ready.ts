@@ -80,6 +80,38 @@ export default class ReadyEvent extends Event<typeof Events.ClientReady> {
     updatePresence();
     setInterval(updatePresence, 10 * 60_000);
 
+    // Time capsules
+    setInterval(async () => {
+      const due = client.capsules.due();
+      for (const c of due) {
+        try {
+          const channel = await client.channels.fetch(c.channelId);
+          if (channel && channel.isTextBased() && !channel.isDMBased()) {
+            const { Theme, baseEmbed, line, kv } = await import("../utils/embeds.js");
+            await channel.send({
+              embeds: [
+                baseEmbed(Theme.info)
+                  .setAuthor({ name: "CAPSULE · AÇILDI" })
+                  .setDescription(
+                    [
+                      line(),
+                      c.content,
+                      line(),
+                      kv("Yazan", c.authorTag),
+                      kv("ID", c.id),
+                    ].join("\n")
+                  ),
+              ],
+            });
+          }
+          client.capsules.markOpened(c.id);
+        } catch (err) {
+          client.logger.error(err, `capsule ${c.id}`);
+          client.capsules.markOpened(c.id);
+        }
+      }
+    }, 30_000);
+
     // Auto deploy slash commands (guild if DISCORD_GUILD_ID, else global)
     try {
       const body = await collectSlashData();
