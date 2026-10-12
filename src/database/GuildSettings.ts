@@ -15,6 +15,7 @@ export interface GuildConfig {
   confessionChannelId: string | null;
   sticky: Record<string, string>; // channelId -> content
   tags: Record<string, string>; // name -> content
+  conseilRoles: Record<string, string>;
 }
 
 type SettingsDump = Record<string, GuildConfig>;
@@ -32,6 +33,7 @@ const DEFAULTS: GuildConfig = {
   confessionChannelId: null,
   sticky: {},
   tags: {},
+  conseilRoles: {},
 };
 
 export class GuildSettings {
@@ -50,6 +52,7 @@ export class GuildSettings {
         autoroleIds: cfg.autoroleIds ?? [],
         sticky: cfg.sticky ?? {},
         tags: cfg.tags ?? {},
+        conseilRoles: cfg.conseilRoles ?? {},
         starboardMin: cfg.starboardMin ?? 3,
       });
     }
@@ -64,7 +67,7 @@ export class GuildSettings {
   }
 
   public get(guildId: string): GuildConfig {
-    return this.data.get(guildId) ?? { ...this.defaults, sticky: {}, tags: {} };
+    return this.data.get(guildId) ?? { ...this.defaults, sticky: {}, tags: {}, conseilRoles: {} };
   }
 
   private mutate(guildId: string, patch: Partial<GuildConfig>): GuildConfig {
@@ -137,6 +140,15 @@ export class GuildSettings {
     if (content === null) delete tags[key];
     else tags[key] = content;
     this.mutate(guildId, { tags });
+  }
+
+
+  public setConseilRole(guildId: string, model: string, personality: string | null): void {
+    const roles = { ...this.get(guildId).conseilRoles };
+    const key = model.toLowerCase();
+    if (personality === null) delete roles[key];
+    else roles[key] = personality.slice(0, 200);
+    this.mutate(guildId, { conseilRoles: roles });
   }
 
   public getPrefix(guildId: string): string {

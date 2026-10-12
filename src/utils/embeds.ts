@@ -90,3 +90,14 @@ export function bar(ratio: number, size = 12): string {
   const filled = Math.round(r * size);
   return `\`${"━".repeat(filled)}${"─".repeat(size - filled)}\``;
 }
+
+/** Conseil / Hybrid AI visual */
+export const ConseilTheme = {
+  cyan: 0x00f2fe as ColorResolvable,
+  purple: 0x9b51e0 as ColorResolvable,
+  footer: "LEVEL: OMEGA · Status: ONLINE · 99.9% Legendary",
+} as const;
+
+export function conseilEmbed(color: ColorResolvable = ConseilTheme.cyan): EmbedBuilder {
+  return new EmbedBuilder().setColor(color).setTimestamp().setFooter({ text: ConseilTheme.footer });
+}
