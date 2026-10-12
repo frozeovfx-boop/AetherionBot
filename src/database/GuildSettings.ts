@@ -9,6 +9,7 @@ export interface GuildConfig {
   welcomeChannelId: string | null;
   welcomeMessage: string;
   leaveMessage: string;
+  autoroleIds: string[];
 }
 
 type SettingsDump = Record<string, GuildConfig>;
@@ -20,6 +21,7 @@ const DEFAULTS: GuildConfig = {
   welcomeChannelId: null,
   welcomeMessage: "Hoş geldin {user} — **{server}** ailesine katıldın. Üye #{count}",
   leaveMessage: "**{user}** sunucudan ayrıldı.",
+  autoroleIds: [],
 };
 
 /**
@@ -35,7 +37,7 @@ export class GuildSettings {
     this.defaults.prefix = defaultPrefix;
     const loaded = await this.store.load({});
     for (const [id, cfg] of Object.entries(loaded)) {
-      this.data.set(id, { ...DEFAULTS, ...cfg });
+      this.data.set(id, { ...DEFAULTS, ...cfg, autoroleIds: cfg.autoroleIds ?? [] });
     }
     this.ready = true;
   }
@@ -79,6 +81,23 @@ export class GuildSettings {
     if (data.message !== undefined) patch.welcomeMessage = data.message;
     if (data.leaveMessage !== undefined) patch.leaveMessage = data.leaveMessage;
     this.mutate(guildId, patch);
+  }
+
+  public setAutoroles(guildId: string, roleIds: string[]): void {
+    this.mutate(guildId, { autoroleIds: roleIds });
+  }
+
+  public addAutorole(guildId: string, roleId: string): void {
+    const ids = [...this.get(guildId).autoroleIds];
+    if (!ids.includes(roleId)) ids.push(roleId);
+    this.setAutoroles(guildId, ids);
+  }
+
+  public removeAutorole(guildId: string, roleId: string): void {
+    this.setAutoroles(
+      guildId,
+      this.get(guildId).autoroleIds.filter((id) => id !== roleId)
+    );
   }
 
   public getPrefix(guildId: string): string {
