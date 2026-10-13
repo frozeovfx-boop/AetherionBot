@@ -16,7 +16,9 @@ async function main() {
     await client.music.init();
     await client.seen.init();
     await client.capsules.init();
-    logger.info("Stores ready: economy · cases · inventory · guilds · seen · capsules");
+    await client.aura.init();
+    await client.birthdays.init();
+    logger.info("Stores ready: economy · cases · inventory · guilds · seen · capsules · aura · birthdays");
 
     await loadEvents(client);
     await loadCommands(client);

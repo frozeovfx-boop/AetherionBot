@@ -14,6 +14,8 @@ import { InventoryManager } from "../database/InventoryManager.js";
 import { MusicManager } from "../music/MusicManager.js";
 import { SeenManager } from "../database/SeenManager.js";
 import { CapsuleManager } from "../database/CapsuleManager.js";
+import { AuraManager } from "../database/AuraManager.js";
+import { BirthdayManager } from "../database/BirthdayManager.js";
 
 export class AetherionClient extends Client {
   public commands = new Collection<string, Command>();
@@ -27,6 +29,8 @@ export class AetherionClient extends Client {
   public readonly music = new MusicManager();
   public readonly seen = new SeenManager();
   public readonly capsules = new CapsuleManager();
+  public readonly aura = new AuraManager();
+  public readonly birthdays = new BirthdayManager();
 
   constructor() {
     super({
