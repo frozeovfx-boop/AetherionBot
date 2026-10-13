@@ -112,6 +112,52 @@ export default class ReadyEvent extends Event<typeof Events.ClientReady> {
       }
     }, 30_000);
 
+    // Birthday announcements (once per guild per calendar day)
+    const birthdayAnnounced = new Set<string>();
+    const checkBirthdays = async () => {
+      const now = new Date();
+      const dayKey = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+      for (const guild of client.guilds.cache.values()) {
+        const stamp = `${guild.id}:${dayKey}`;
+        if (birthdayAnnounced.has(stamp)) continue;
+        const list = client.birthdays.today(guild.id, now);
+        if (!list.length) {
+          birthdayAnnounced.add(stamp);
+          continue;
+        }
+        const cfg = client.settings.get(guild.id);
+        const channelId = cfg.welcomeChannelId ?? guild.systemChannelId;
+        if (!channelId) {
+          birthdayAnnounced.add(stamp);
+          continue;
+        }
+        try {
+          const channel = await client.channels.fetch(channelId);
+          if (!channel || !channel.isTextBased() || channel.isDMBased()) {
+            birthdayAnnounced.add(stamp);
+            continue;
+          }
+          const { Theme, baseEmbed, line } = await import("../utils/embeds.js");
+          const mentions = list.map((b) => `<@${b.userId}>`).join(" ");
+          await channel.send({
+            embeds: [
+              baseEmbed(Theme.success)
+                .setAuthor({ name: "BIRTHDAY" })
+                .setTitle("Bugün doğum günü!")
+                .setDescription([line(), mentions, line(), "✦ İyi ki doğdunuz!"].join("\n")),
+            ],
+          });
+          birthdayAnnounced.add(stamp);
+          client.logger.info(`Birthday announce → ${guild.name}`);
+        } catch (err) {
+          client.logger.error(err, "birthday announce");
+          birthdayAnnounced.add(stamp);
+        }
+      }
+    };
+    setTimeout(checkBirthdays, 15_000);
+    setInterval(checkBirthdays, 60 * 60_000);
+
     // Auto deploy slash commands (guild if DISCORD_GUILD_ID, else global)
     try {
       const body = await collectSlashData();
