@@ -9,8 +9,7 @@ import {
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { AetherionClient } from "../../client/AetherionClient.js";
-import { Theme, baseEmbed, code, divider } from "../../utils/embeds.js";
-import { tg } from "../../i18n/index.js";
+import { Theme, baseEmbed, code, line } from "../../utils/embeds.js";
 
 const CATEGORIES: {
   id: string;
@@ -18,54 +17,48 @@ const CATEGORIES: {
   emoji: string;
   blurb: string;
 }[] = [
-  { id: "moderation", label: "Moderasyon", emoji: "🛡️", blurb: "Ban, warn, timeout, lock" },
-  { id: "utility", label: "Utility", emoji: "◈", blurb: "Ping, info, tools" },
-  { id: "economy", label: "Economy", emoji: "⬡", blurb: "Balance, daily, shop" },
-  { id: "music", label: "Müzik", emoji: "♪", blurb: "Play, queue, skip" },
-  { id: "server", label: "Sunucu", emoji: "⬡", blurb: "Prefix, ticket, language" },
-  { id: "fun", label: "Eğlence", emoji: "✦", blurb: "Ship, meme, games" },
-  { id: "ai", label: "AI", emoji: "◎", blurb: "Ask, chat" },
-  { id: "admin", label: "Admin", emoji: "⚙", blurb: "Eval, status" },
+  { id: "moderation", label: "Moderasyon", emoji: "🛡", blurb: "Ban · warn · timeout · lock" },
+  { id: "server", label: "Sunucu", emoji: "⚙", blurb: "Oda · davet · ticket · welcome" },
+  { id: "utility", label: "Utility", emoji: "✦", blurb: "Info · tools · snipe · poll" },
+  { id: "economy", label: "Economy", emoji: "⬡", blurb: "Para · level · shop" },
+  { id: "music", label: "Müzik", emoji: "♪", blurb: "Play · queue · controls" },
+  { id: "fun", label: "Eğlence", emoji: "◈", blurb: "Aura · ship · games" },
+  { id: "ai", label: "AI Conseil", emoji: "◎", blurb: "Debate · consult · ask" },
+  { id: "admin", label: "Admin", emoji: "⚡", blurb: "Owner tools" },
 ];
 
-function homeEmbed(client: AetherionClient, guildId: string | null): EmbedBuilder {
+function homeEmbed(client: AetherionClient): EmbedBuilder {
   const counts = new Map<string, number>();
   for (const c of client.commands.values()) {
     counts.set(c.category, (counts.get(c.category) ?? 0) + 1);
   }
 
-  const rows = CATEGORIES.filter((c) => counts.has(c.id)).map((c) => {
-    const n = counts.get(c.id) ?? 0;
-    return `${c.emoji}  **${c.label}**\n　　${c.blurb}  ·  ${code(n)}`;
-  });
+  const body = CATEGORIES.filter((c) => counts.has(c.id))
+    .map((c) => {
+      const n = counts.get(c.id) ?? 0;
+      return `${c.emoji}  **${c.label}**  ·  \`${n}\`\n> ${c.blurb}`;
+    })
+    .join("\n\n");
 
   return baseEmbed(Theme.primary)
     .setAuthor({
       name: "AETHERION",
       iconURL: client.user?.displayAvatarURL({ size: 128 }) ?? undefined,
     })
-    .setTitle("Komut Merkezi")
+    .setTitle("Komutlar")
     .setDescription(
       [
-        "*Temiz. Güçlü. Tek yumruk.*",
-        "",
-        divider(),
-        rows.join("\n\n"),
-        divider(),
-        "",
-        `${tg(guildId, "help.total", { count: client.commands.size })}`,
-        "Aşağıdan kategori seç → komut listesi açılır.",
+        line(),
+        body,
+        line(),
+        `Toplam **${client.commands.size}** komut  ·  Slash + Prefix`,
+        "Menüden kategori seç.",
       ].join("\n")
     )
-    .setThumbnail(client.user?.displayAvatarURL({ size: 256 }) ?? null)
-    .setFooter({ text: "Aetherion · Select a category" });
+    .setFooter({ text: "Aetherion · Professional · Clean" });
 }
 
-function categoryEmbed(
-  client: AetherionClient,
-  categoryId: string,
-  guildId: string | null
-): EmbedBuilder {
+function categoryEmbed(client: AetherionClient, categoryId: string): EmbedBuilder {
   const meta = CATEGORIES.find((c) => c.id === categoryId);
   const commands = [...client.commands.values()]
     .filter((c) => c.category === categoryId)
@@ -73,29 +66,13 @@ function categoryEmbed(
 
   const list =
     commands.length === 0
-      ? tg(guildId, "help.empty_category")
-      : commands.map((c) => `\`/${c.name.padEnd(14)}\`  ${c.description}`).join("\n");
+      ? "Boş"
+      : commands.map((c) => `\`${c.name}\` — ${c.description}`).join("\n");
 
   return baseEmbed(Theme.primary)
-    .setAuthor({
-      name: "AETHERION",
-      iconURL: client.user?.displayAvatarURL({ size: 64 }) ?? undefined,
-    })
-    .setTitle(`${meta?.emoji ?? "•"}  ${meta?.label ?? categoryId}`)
-    .setDescription(
-      [
-        meta?.blurb ? `*${meta.blurb}*` : null,
-        "",
-        divider(),
-        list,
-        divider(),
-        "",
-        tg(guildId, "help.commands_count", { count: commands.length }),
-      ]
-        .filter((x) => x !== null)
-        .join("\n")
-    )
-    .setFooter({ text: "Aetherion · Menüden başka kategori seçebilirsin" });
+    .setAuthor({ name: `${meta?.emoji ?? ""}  ${meta?.label ?? categoryId}`.trim() })
+    .setDescription([line(), list, line()].join("\n"))
+    .setFooter({ text: `${commands.length} komut · Aetherion` });
 }
 
 function buildSelect(client: AetherionClient): ActionRowBuilder<StringSelectMenuBuilder> {
@@ -106,19 +83,19 @@ function buildSelect(client: AetherionClient): ActionRowBuilder<StringSelectMenu
 
   const menu = new StringSelectMenuBuilder()
     .setCustomId("help_category")
-    .setPlaceholder("Kategori seç / Select category")
+    .setPlaceholder("Kategori seç…")
     .addOptions(
       new StringSelectMenuOptionBuilder()
-        .setLabel("Ana sayfa")
-        .setDescription("Tüm kategorilere dönüş")
+        .setLabel("Ana menü")
+        .setDescription("Tüm kategoriler")
         .setValue("home")
         .setEmoji("🏠"),
       ...CATEGORIES.filter((c) => counts.has(c.id)).map((c) =>
         new StringSelectMenuOptionBuilder()
           .setLabel(c.label)
-          .setDescription(`${c.blurb} · ${counts.get(c.id)} komut`)
+          .setDescription(`${counts.get(c.id)} komut`)
           .setValue(c.id)
-          .setEmoji(c.emoji === "◈" || c.emoji === "⬡" || c.emoji === "♪" || c.emoji === "✦" || c.emoji === "◎" || c.emoji === "⚙" ? "📁" : c.emoji)
+          .setEmoji(c.emoji)
       )
     );
 
@@ -129,12 +106,12 @@ export default class HelpCommand extends Command {
   constructor() {
     super({
       name: "help",
-      description: "Komut listesi — kategori menülü",
+      description: "Komut listesi",
       category: "utility",
       cooldown: 5,
       data: new SlashCommandBuilder()
         .setName("help")
-        .setDescription("Komut listesi — kategori menülü")
+        .setDescription("Komut listesi")
         .addStringOption((opt) =>
           opt
             .setName("kategori")
@@ -142,11 +119,11 @@ export default class HelpCommand extends Command {
             .setRequired(false)
             .addChoices(
               { name: "Moderasyon", value: "moderation" },
+              { name: "Sunucu", value: "server" },
               { name: "Utility", value: "utility" },
               { name: "Economy", value: "economy" },
               { name: "Müzik", value: "music" },
               { name: "Eğlence", value: "fun" },
-              { name: "Sunucu", value: "server" },
               { name: "AI", value: "ai" },
               { name: "Admin", value: "admin" }
             )
@@ -156,14 +133,11 @@ export default class HelpCommand extends Command {
   }
 
   public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
-    const guildId = interaction.guildId;
     const direct = interaction.options.getString("kategori");
     const row = buildSelect(client);
 
     const initial =
-      direct != null
-        ? categoryEmbed(client, direct, guildId)
-        : homeEmbed(client, guildId);
+      direct != null ? categoryEmbed(client, direct) : homeEmbed(client);
 
     const msg = await interaction.reply({
       embeds: [initial],
@@ -179,11 +153,7 @@ export default class HelpCommand extends Command {
 
     collector.on("collect", async (i) => {
       const value = i.values[0]!;
-      const embed =
-        value === "home"
-          ? homeEmbed(client, guildId)
-          : categoryEmbed(client, value, guildId);
-
+      const embed = value === "home" ? homeEmbed(client) : categoryEmbed(client, value);
       await i.update({ embeds: [embed], components: [row] });
     });
 
