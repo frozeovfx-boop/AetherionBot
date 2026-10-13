@@ -13,6 +13,15 @@ export default class GuildMemberRemoveEvent extends Event<typeof Events.GuildMem
     member: GuildMember | PartialGuildMember
   ): Promise<void> {
     const cfg = client.settings.get(member.guild.id);
+
+    // Invite leave count
+    const invKey = `${member.guild.id}:${member.id}`;
+    const inviterId = client.invites.memberInviter.get(invKey);
+    if (inviterId) {
+      client.invites.addLeave(member.guild.id, inviterId);
+      client.invites.memberInviter.delete(invKey);
+    }
+
     if (!cfg.welcomeChannelId) return;
 
     try {

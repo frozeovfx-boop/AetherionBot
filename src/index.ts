@@ -18,6 +18,7 @@ async function main() {
     await client.capsules.init();
     await client.aura.init();
     await client.birthdays.init();
+    await client.invites.init();
     logger.info("Stores ready: economy · cases · inventory · guilds · seen · capsules · aura · birthdays");
 
     await loadEvents(client);

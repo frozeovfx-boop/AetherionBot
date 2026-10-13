@@ -1,13 +1,21 @@
-import { Events, VoiceState, Collection } from "discord.js";
+import {
+  Events,
+  VoiceState,
+  Collection,
+  ChannelType,
+  PermissionFlagsBits,
+} from "discord.js";
 import { Event } from "../structures/Event.js";
 import type { AetherionClient } from "../client/AetherionClient.js";
 
-/** guildId:userId -> join timestamp */
+/** guildId:userId -> join timestamp (XP) */
 const voiceJoined = new Collection<string, number>();
+/** channelId -> ownerId for temp rooms */
+const tempRooms = new Collection<string, string>();
 
 const XP_PER_MINUTE = 5;
 const COIN_PER_MINUTE = 2;
-const MIN_MS = 60_000; // at least 1 min to earn
+const MIN_MS = 60_000;
 
 export default class VoiceStateUpdateEvent extends Event<typeof Events.VoiceStateUpdate> {
   constructor() {
@@ -21,14 +29,21 @@ export default class VoiceStateUpdateEvent extends Event<typeof Events.VoiceStat
   ): Promise<void> {
     const member = newState.member ?? oldState.member;
     if (!member || member.user.bot) return;
-    if (!newState.guild) return;
+    const guild = newState.guild;
+    if (!guild) return;
 
-    const key = `${newState.guild.id}:${member.id}`;
-    const joinedChannel = !oldState.channelId && newState.channelId;
-    const leftChannel = oldState.channelId && !newState.channelId;
+    // ── Temp voice (özel oda) ──
+    await handleTempVoice(client, oldState, newState).catch((err) =>
+      client.logger.error(err, "temp voice")
+    );
+
+    // ── Voice XP ──
+    const key = `${guild.id}:${member.id}`;
+    const joinedChannel = !oldState.channelId && !!newState.channelId;
+    const leftChannel = !!oldState.channelId && !newState.channelId;
     const switched =
-      oldState.channelId &&
-      newState.channelId &&
+      !!oldState.channelId &&
+      !!newState.channelId &&
       oldState.channelId !== newState.channelId;
 
     if (joinedChannel) {
@@ -39,10 +54,7 @@ export default class VoiceStateUpdateEvent extends Event<typeof Events.VoiceStat
     if (leftChannel || switched) {
       const start = voiceJoined.get(key);
       voiceJoined.delete(key);
-
-      if (switched) {
-        voiceJoined.set(key, Date.now());
-      }
+      if (switched) voiceJoined.set(key, Date.now());
 
       if (!start) return;
       const elapsed = Date.now() - start;
@@ -51,22 +63,16 @@ export default class VoiceStateUpdateEvent extends Event<typeof Events.VoiceStat
       const minutes = Math.floor(elapsed / 60_000);
       if (minutes < 1) return;
 
-      const xp = minutes * XP_PER_MINUTE;
-      const coins = minutes * COIN_PER_MINUTE;
-
       const { leveledUp, profile } = client.economy.addXp(
-        newState.guild.id,
+        guild.id,
         member.id,
-        xp
+        minutes * XP_PER_MINUTE
       );
-      client.economy.addWallet(newState.guild.id, member.id, coins);
+      client.economy.addWallet(guild.id, member.id, minutes * COIN_PER_MINUTE);
 
       if (leveledUp) {
         try {
-          const ch =
-            newState.guild.systemChannel ??
-            newState.channel ??
-            oldState.channel;
+          const ch = guild.systemChannel ?? newState.channel ?? oldState.channel;
           if (ch && ch.isTextBased()) {
             const { Theme, baseEmbed, line, kv } = await import("../utils/embeds.js");
             await ch.send({
@@ -88,6 +94,57 @@ export default class VoiceStateUpdateEvent extends Event<typeof Events.VoiceStat
           /* ignore */
         }
       }
+    }
+  }
+}
+
+async function handleTempVoice(
+  client: AetherionClient,
+  oldState: VoiceState,
+  newState: VoiceState
+): Promise<void> {
+  const member = newState.member ?? oldState.member;
+  if (!member || member.user.bot) return;
+  const guild = newState.guild;
+  const cfg = client.settings.get(guild.id);
+  if (!cfg.tempVoiceHubId) return;
+
+  // Join hub → create private room
+  if (newState.channelId === cfg.tempVoiceHubId) {
+    const name = `🔊 ${member.displayName}`.slice(0, 100);
+    const channel = await guild.channels.create({
+      name,
+      type: ChannelType.GuildVoice,
+      parent: cfg.tempVoiceCategoryId ?? newState.channel?.parentId ?? undefined,
+      permissionOverwrites: [
+        {
+          id: guild.id,
+          allow: [PermissionFlagsBits.Connect, PermissionFlagsBits.ViewChannel],
+        },
+        {
+          id: member.id,
+          allow: [
+            PermissionFlagsBits.Connect,
+            PermissionFlagsBits.ManageChannels,
+            PermissionFlagsBits.MuteMembers,
+            PermissionFlagsBits.MoveMembers,
+            PermissionFlagsBits.ViewChannel,
+          ],
+        },
+      ],
+      reason: `Özel oda · ${member.user.tag}`,
+    });
+    tempRooms.set(channel.id, member.id);
+    await member.voice.setChannel(channel.id).catch(() => null);
+    return;
+  }
+
+  // Empty temp room → delete
+  if (oldState.channelId && tempRooms.has(oldState.channelId)) {
+    const ch = oldState.channel;
+    if (ch && ch.members.filter((m) => !m.user.bot).size === 0) {
+      tempRooms.delete(oldState.channelId);
+      await ch.delete("Özel oda boş").catch(() => null);
     }
   }
 }

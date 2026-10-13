@@ -80,6 +80,21 @@ export default class ReadyEvent extends Event<typeof Events.ClientReady> {
     updatePresence();
     setInterval(updatePresence, 10 * 60_000);
 
+    // Invite cache
+    for (const guild of client.guilds.cache.values()) {
+      try {
+        const { Collection } = await import("discord.js");
+        const invs = await guild.invites.fetch();
+        const map = new Collection<string, { uses: number; inviterId: string }>();
+        for (const [code, inv] of invs) {
+          map.set(code, { uses: inv.uses ?? 0, inviterId: inv.inviter?.id ?? "" });
+        }
+        client.invites.cache.set(guild.id, map);
+      } catch {
+        /* Manage Guild required */
+      }
+    }
+
     // Time capsules
     setInterval(async () => {
       const due = client.capsules.due();
