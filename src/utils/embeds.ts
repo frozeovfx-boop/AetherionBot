@@ -7,7 +7,7 @@ import {
 } from "discord.js";
 
 /**
- * Sukuna visual language
+ * Yuta visual language
  * One palette. No noise. Every embed reads the same.
  */
 export const Theme = {
@@ -20,7 +20,7 @@ export const Theme = {
   economy: 0xf59e0b as ColorResolvable,
   music: 0xec4899 as ColorResolvable,
   mod: 0xf43f5e as ColorResolvable,
-  footer: "Sukuna",
+  footer: "Yuta",
 } as const;
 
 export function baseEmbed(color: ColorResolvable = Theme.primary): EmbedBuilder {

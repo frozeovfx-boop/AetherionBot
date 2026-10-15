@@ -8,7 +8,7 @@ import {
   EmbedBuilder,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, code, line } from "../../utils/embeds.js";
 
 const CATEGORIES: {
@@ -27,7 +27,7 @@ const CATEGORIES: {
   { id: "admin", label: "Admin", emoji: "⚡", blurb: "Owner tools" },
 ];
 
-function homeEmbed(client: AetherionClient): EmbedBuilder {
+function homeEmbed(client: YutaClient): EmbedBuilder {
   const counts = new Map<string, number>();
   for (const c of client.commands.values()) {
     counts.set(c.category, (counts.get(c.category) ?? 0) + 1);
@@ -42,7 +42,7 @@ function homeEmbed(client: AetherionClient): EmbedBuilder {
 
   return baseEmbed(Theme.primary)
     .setAuthor({
-      name: "SUKUNA",
+      name: "YUTA",
       iconURL: client.user?.displayAvatarURL({ size: 128 }) ?? undefined,
     })
     .setTitle("Komutlar")
@@ -55,10 +55,10 @@ function homeEmbed(client: AetherionClient): EmbedBuilder {
         "Menüden kategori seç.",
       ].join("\n")
     )
-    .setFooter({ text: "Sukuna · Professional · Clean" });
+    .setFooter({ text: "Yuta · Professional · Clean" });
 }
 
-function categoryEmbed(client: AetherionClient, categoryId: string): EmbedBuilder {
+function categoryEmbed(client: YutaClient, categoryId: string): EmbedBuilder {
   const meta = CATEGORIES.find((c) => c.id === categoryId);
   const commands = [...client.commands.values()]
     .filter((c) => c.category === categoryId)
@@ -72,10 +72,10 @@ function categoryEmbed(client: AetherionClient, categoryId: string): EmbedBuilde
   return baseEmbed(Theme.primary)
     .setAuthor({ name: `${meta?.emoji ?? ""}  ${meta?.label ?? categoryId}`.trim() })
     .setDescription([line(), list, line()].join("\n"))
-    .setFooter({ text: `${commands.length} komut · Sukuna` });
+    .setFooter({ text: `${commands.length} komut · Yuta` });
 }
 
-function buildSelect(client: AetherionClient): ActionRowBuilder<StringSelectMenuBuilder> {
+function buildSelect(client: YutaClient): ActionRowBuilder<StringSelectMenuBuilder> {
   const counts = new Map<string, number>();
   for (const c of client.commands.values()) {
     counts.set(c.category, (counts.get(c.category) ?? 0) + 1);
@@ -132,7 +132,7 @@ export default class HelpCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const direct = interaction.options.getString("kategori");
     const row = buildSelect(client);
 

@@ -1,11 +1,11 @@
-import { MegumiClient } from "./client/MegumiClient.js";
+import { YutaClient } from "./client/YutaClient.js";
 import { loadCommands } from "./handlers/commandHandler.js";
 import { loadEvents } from "./handlers/eventHandler.js";
 import { logger } from "./utils/logger.js";
 import { bindGuildSettings } from "./i18n/index.js";
 
 async function main() {
-  const client = new MegumiClient();
+  const client = new YutaClient();
 
   try {
     await client.economy.init();

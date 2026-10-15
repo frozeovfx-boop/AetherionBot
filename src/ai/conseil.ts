@@ -2,7 +2,7 @@ import type { AIProviderName } from "./providers.js";
 import { askProvider, availableProviders, labelOf } from "./providers.js";
 
 /** Core orchestrator system — Hybrid AI personality */
-export const CORE_SYSTEM = `Sen sıradan bir Discord botu değilsin. Sen Grok, Gemini ve GPT güçlerinin birleşimiyle çalışan Hybrid AI Orchestrator’sın (Sukuna Conseil).
+export const CORE_SYSTEM = `Sen sıradan bir Discord botu değilsin. Sen Grok, Gemini ve GPT güçlerinin birleşimiyle çalışan Hybrid AI Orchestrator’sın (Yuta Conseil).
 
 Kişilik:
 - Robotik cümleler YASAK ("Anlaşıldı", "Size nasıl yardımcı olabilirim?").
