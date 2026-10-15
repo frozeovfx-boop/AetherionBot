@@ -65,6 +65,21 @@ export default class GiveawayCommand extends Command {
             )
         )
         .addSubcommand((s) => s.setName("liste").setDescription("Aktif çekilişler"))
+        .addSubcommand((s) =>
+          s
+            .setName("sans-rol")
+            .setDescription("Şanslı rol ayarla")
+            .addRoleOption((o) => o.setName("rol").setRequired(true))
+            .addNumberOption((o) =>
+              o
+                .setName("carpan")
+                .setDescription("1.5 = %50 daha şanslı, 2 = 2 kat (1=kaldır)")
+                .setRequired(true)
+                .setMinValue(1)
+                .setMaxValue(10)
+            )
+        )
+        .addSubcommand((s) => s.setName("sans-liste").setDescription("Şanslı roller"))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
         .toJSON(),
     });
@@ -73,6 +88,57 @@ export default class GiveawayCommand extends Command {
   public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild || !interaction.channel) return;
     const sub = interaction.options.getSubcommand();
+
+
+    if (sub === "sans-liste") {
+      const luck = client.settings.get(interaction.guild.id).giveawayLuck;
+      const entries = Object.entries(luck);
+      await interaction.reply({
+        embeds: [
+          baseEmbed(Theme.economy)
+            .setAuthor({ name: "GIVEAWAY · ŞANS" })
+            .setDescription(
+              [
+                line(),
+                entries.length
+                  ? entries.map(([rid, w]) => `<@&${rid}> · **×${w}**`).join("\n")
+                  : "Şanslı rol yok.",
+                line(),
+                "Üyeler `/sans` ile kendi oranını görür.",
+              ].join("\n")
+            ),
+        ],
+        ephemeral: true,
+      });
+      return;
+    }
+
+    if (sub === "sans-rol") {
+      const role = interaction.options.getRole("rol", true);
+      const carpan = interaction.options.getNumber("carpan", true);
+      if (carpan <= 1) {
+        client.settings.setGiveawayLuck(interaction.guild.id, role.id, null);
+        await interaction.reply({
+          embeds: [
+            baseEmbed(Theme.mute)
+              .setAuthor({ name: "GIVEAWAY · ŞANS" })
+              .setDescription(`${role} şanslı listeden çıkarıldı.`),
+          ],
+        });
+        return;
+      }
+      client.settings.setGiveawayLuck(interaction.guild.id, role.id, carpan);
+      await interaction.reply({
+        embeds: [
+          baseEmbed(Theme.success)
+            .setAuthor({ name: "GIVEAWAY · ŞANS" })
+            .setDescription(
+              [line(), kv("Rol", `${role}`), kv("Çarpan", `**×${carpan}**`), line()].join("\n")
+            ),
+        ],
+      });
+      return;
+    }
 
     if (sub === "liste") {
       const active = client.giveaways.active().filter((g) => g.guildId === interaction.guild!.id);
@@ -157,7 +223,12 @@ export default class GiveawayCommand extends Command {
           kv("Bitiş", `<t:${Math.floor(endsAt / 1000)}:R>`),
           line(),
           "Katılmak için 🎉 tepkisine tıkla.",
-        ].join("\n")
+          Object.keys(client.settings.get(interaction.guild.id).giveawayLuck).length
+            ? "Şanslı roller ağırlıklı seçilir · `/sans`"
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n")
       )
       .setFooter({ text: `ID ${id} · ${interaction.user.tag}` })
       .setTimestamp(endsAt);

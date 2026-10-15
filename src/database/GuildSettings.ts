@@ -41,7 +41,10 @@ export interface GuildConfig {
   ticketSupportRoleId: string | null;
   ticketLogChannelId: string | null;
   ticketButtons: TicketButton[];
+  /** roleId -> weight multiplier (1 = normal, 2 = 2x chance) */
+  giveawayLuck: Record<string, number>;
 }
+
 
 
 
@@ -81,6 +84,7 @@ const DEFAULTS: GuildConfig = {
   ticketButtons: [
     { id: "destek", label: "Destek", style: "Primary" },
   ],
+  giveawayLuck: {},
 };
 
 
@@ -110,6 +114,7 @@ export class GuildSettings {
           cfg.ticketButtons?.length
             ? cfg.ticketButtons
             : [{ id: "destek", label: "Destek", style: "Primary" }],
+        giveawayLuck: cfg.giveawayLuck ?? {},
       });
     }
     this.ready = true;
@@ -257,6 +262,14 @@ export class GuildSettings {
   }
 
 
+
+
+  public setGiveawayLuck(guildId: string, roleId: string, weight: number | null): void {
+    const luck = { ...this.get(guildId).giveawayLuck };
+    if (weight === null || weight <= 1) delete luck[roleId];
+    else luck[roleId] = Math.min(10, Math.max(1.1, Math.round(weight * 10) / 10));
+    this.mutate(guildId, { giveawayLuck: luck });
+  }
 
   public setTicketButtons(guildId: string, buttons: TicketButton[]): void {
     this.mutate(guildId, { ticketButtons: buttons.slice(0, 5) });
