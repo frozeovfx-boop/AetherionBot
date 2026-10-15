@@ -42,7 +42,7 @@ function homeEmbed(client: AetherionClient): EmbedBuilder {
 
   return baseEmbed(Theme.primary)
     .setAuthor({
-      name: "AETHERION",
+      name: "SUKUNA",
       iconURL: client.user?.displayAvatarURL({ size: 128 }) ?? undefined,
     })
     .setTitle("Komutlar")
@@ -55,7 +55,7 @@ function homeEmbed(client: AetherionClient): EmbedBuilder {
         "Menüden kategori seç.",
       ].join("\n")
     )
-    .setFooter({ text: "Aetherion · Professional · Clean" });
+    .setFooter({ text: "Sukuna · Professional · Clean" });
 }
 
 function categoryEmbed(client: AetherionClient, categoryId: string): EmbedBuilder {
@@ -72,7 +72,7 @@ function categoryEmbed(client: AetherionClient, categoryId: string): EmbedBuilde
   return baseEmbed(Theme.primary)
     .setAuthor({ name: `${meta?.emoji ?? ""}  ${meta?.label ?? categoryId}`.trim() })
     .setDescription([line(), list, line()].join("\n"))
-    .setFooter({ text: `${commands.length} komut · Aetherion` });
+    .setFooter({ text: `${commands.length} komut · Sukuna` });
 }
 
 function buildSelect(client: AetherionClient): ActionRowBuilder<StringSelectMenuBuilder> {

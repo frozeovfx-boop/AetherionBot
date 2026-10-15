@@ -15,7 +15,7 @@ export default class GuildMemberAddEvent extends Event<typeof Events.GuildMember
     if (cfg.autoroleIds.length > 0) {
       const roles = cfg.autoroleIds.filter((id) => member.guild.roles.cache.has(id));
       if (roles.length > 0) {
-        await member.roles.add(roles, "Aetherion autorole").catch((err) => {
+        await member.roles.add(roles, "Sukuna autorole").catch((err) => {
           client.logger.error(err, "autorole failed");
         });
       }
@@ -106,7 +106,7 @@ export default class GuildMemberAddEvent extends Event<typeof Events.GuildMember
         .setTitle("Hoş Geldin")
         .setThumbnail(member.user.displayAvatarURL({ size: 256 }))
         .setDescription([line(), text, line()].join("\n"))
-        .setFooter({ text: `Üye #${member.guild.memberCount} · Aetherion` });
+        .setFooter({ text: `Üye #${member.guild.memberCount} · Sukuna` });
 
       await (channel as TextChannel).send({ embeds: [embed] });
     } catch (err) {

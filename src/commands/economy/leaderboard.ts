@@ -45,7 +45,7 @@ export default class LeaderboardCommand extends Command {
       .setAuthor({ name: "ECONOMY" })
       .setTitle("Sıralama")
       .setDescription([line(), lines.join("\n\n"), line()].join("\n"))
-      .setFooter({ text: `${interaction.guild.name} · Aetherion` });
+      .setFooter({ text: `${interaction.guild.name} · Sukuna` });
 
     await interaction.reply({ embeds: [embed] });
   }

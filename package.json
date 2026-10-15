@@ -1,7 +1,7 @@
 {
-  "name": "aetherion",
+  "name": "sukuna",
   "version": "1.0.0",
-  "description": "Aetherion \u2014 Saitama-level Discord platform. Clean, powerful, production-ready.",
+  "description": "Sukuna \u2014 Saitama-level Discord platform. Clean, powerful, production-ready.",
   "main": "index.js",
   "type": "module",
   "scripts": {

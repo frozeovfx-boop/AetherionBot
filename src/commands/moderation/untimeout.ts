@@ -64,7 +64,7 @@ export default class UntimeoutCommand extends Command {
           line(),
         ].join("\n")
       )
-      .setFooter({ text: `Case #${modCase.id} · Aetherion` });
+      .setFooter({ text: `Case #${modCase.id} · Sukuna` });
 
     await interaction.reply({ embeds: [embed] });
   }

@@ -283,7 +283,7 @@ export default class SelfroleCommand extends Command {
           line(),
         ].join("\n")
       )
-      .setFooter({ text: `ID ${panelId} · Aetherion` });
+      .setFooter({ text: `ID ${panelId} · Sukuna` });
 
     const components = buildComponents(panelId, mode, parsed.roles);
     const msg = await channel.send({ embeds: [embed], components });

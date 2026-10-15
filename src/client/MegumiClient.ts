@@ -19,7 +19,7 @@ import { BirthdayManager } from "../database/BirthdayManager.js";
 import { InviteManager } from "../database/InviteManager.js";
 import { SelfRoleManager } from "../database/SelfRoleManager.js";
 
-export class AetherionClient extends Client {
+export class MegumiClient extends Client {
   public commands = new Collection<string, Command>();
   public cooldowns = new Collection<string, Collection<string, number>>();
   public readonly config = config;
@@ -59,7 +59,7 @@ export class AetherionClient extends Client {
   }
 
   public async start(): Promise<void> {
-    this.logger.info("Starting Aetherion...");
+    this.logger.info("Starting Megumi...");
     await this.login(config.DISCORD_TOKEN);
   }
 }

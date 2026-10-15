@@ -70,7 +70,7 @@ export default class AskCommand extends Command {
             line(),
           ].join("\n")
         )
-        .setFooter({ text: `${activeProviderLabel()} · Aetherion` });
+        .setFooter({ text: `${activeProviderLabel()} · Sukuna` });
 
       await interaction.editReply({ embeds: [embed] });
     } catch (err) {

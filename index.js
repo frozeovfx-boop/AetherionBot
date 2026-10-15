@@ -34,7 +34,7 @@ async function main() {
       await run("npx", ["tsx", "src/deploy-commands.ts"]);
     }
   } catch (e) {
-    console.error("[Aetherion] deploy skipped:", e.message);
+    console.error("[Megumi] deploy skipped:", e.message);
   }
 
   if (existsSync(tsxBin)) {

@@ -53,7 +53,7 @@ export default class WarningsCommand extends Command {
       .setTitle(`Uyarılar · ${target.username}`)
       .setThumbnail(target.displayAvatarURL({ size: 256 }))
       .setDescription([line(), list, line()].join("\n"))
-      .setFooter({ text: `${warns.length} aktif · Aetherion` });
+      .setFooter({ text: `${warns.length} aktif · Sukuna` });
 
     await interaction.reply({ embeds: [embed] });
   }

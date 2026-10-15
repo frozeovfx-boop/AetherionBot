@@ -52,7 +52,7 @@ export default class CasesCommand extends Command {
       .setTitle(`Geçmiş · ${target.username}`)
       .setThumbnail(target.displayAvatarURL({ size: 256 }))
       .setDescription([line(), list, line()].join("\n"))
-      .setFooter({ text: `${cases.length} kayıt · Aetherion` });
+      .setFooter({ text: `${cases.length} kayıt · Sukuna` });
 
     await interaction.reply({ embeds: [embed] });
   }

@@ -1,11 +1,11 @@
-import { AetherionClient } from "./client/AetherionClient.js";
+import { MegumiClient } from "./client/MegumiClient.js";
 import { loadCommands } from "./handlers/commandHandler.js";
 import { loadEvents } from "./handlers/eventHandler.js";
 import { logger } from "./utils/logger.js";
 import { bindGuildSettings } from "./i18n/index.js";
 
 async function main() {
-  const client = new AetherionClient();
+  const client = new MegumiClient();
 
   try {
     await client.economy.init();
@@ -26,7 +26,7 @@ async function main() {
     await loadCommands(client);
     await client.start();
   } catch (error) {
-    logger.fatal(error, "Failed to start Aetherion");
+    logger.fatal(error, "Failed to start Megumi");
     process.exit(1);
   }
 }

@@ -1,4 +1,4 @@
-# Aetherion
+# Sukuna
 
 Saitama-level Discord platform.
 

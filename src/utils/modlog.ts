@@ -62,7 +62,7 @@ export function buildModEmbed(data: {
     );
 
   if (data.userAvatar) embed.setThumbnail(data.userAvatar);
-  if (data.caseId) embed.setFooter({ text: `Case #${data.caseId} · Aetherion` });
+  if (data.caseId) embed.setFooter({ text: `Case #${data.caseId} · Sukuna` });
   return embed;
 }
 
