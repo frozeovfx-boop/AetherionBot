@@ -4,6 +4,7 @@ import {
   Collection,
   ButtonInteraction,
   ModalSubmitInteraction,
+  TextChannel,
   StringSelectMenuInteraction,
   GuildMember,
   ChannelType,
@@ -32,7 +33,17 @@ export default class InteractionCreateEvent extends Event<typeof Events.Interact
     }
 
     if (interaction.isButton() && interaction.customId === "ticket_close") {
-      await handleTicketClose(interaction);
+      await handleTicketClose(client, interaction);
+      return;
+    }
+
+    if (interaction.isButton() && interaction.customId === "ticket_claim") {
+      await handleTicketClaim(interaction);
+      return;
+    }
+
+    if (interaction.isButton() && interaction.customId === "ticket_close_confirm") {
+      await handleTicketCloseConfirm(client, interaction);
       return;
     }
 
@@ -105,75 +116,219 @@ async function handleTicketCreate(client: YutaClient, interaction: ButtonInterac
   if (!interaction.guild || !interaction.member) return;
 
   const existing = interaction.guild.channels.cache.find(
-    (c) => c.name === `ticket-${interaction.user.username.toLowerCase().slice(0, 20)}`
+    (c) =>
+      c.isTextBased() &&
+      "topic" in c &&
+      (c as TextChannel).topic === `ticket:${interaction.user.id}`
   );
 
   if (existing) {
-    await interaction.reply({ content: `Zaten açık bir ticket'ın var: ${existing}`, ephemeral: true });
+    await interaction.reply({ content: `Zaten açık ticket: ${existing}`, ephemeral: true });
+    return;
+  }
+
+  // fallback name search
+  const byName = interaction.guild.channels.cache.find(
+    (c) => c.name.startsWith("ticket-") && c.isTextBased() && (c as TextChannel).topic === `ticket:${interaction.user.id}`
+  );
+  if (byName) {
+    await interaction.reply({ content: `Zaten açık ticket: ${byName}`, ephemeral: true });
     return;
   }
 
   await interaction.deferReply({ ephemeral: true });
 
+  const cfg = client.settings.get(interaction.guild.id);
+  const overwrites = [
+    {
+      id: interaction.guild.id,
+      deny: [PermissionFlagsBits.ViewChannel],
+      type: OverwriteType.Role,
+    },
+    {
+      id: interaction.user.id,
+      allow: [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.AttachFiles,
+        PermissionFlagsBits.ReadMessageHistory,
+      ],
+      type: OverwriteType.Member,
+    },
+    {
+      id: client.user!.id,
+      allow: [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.ManageChannels,
+        PermissionFlagsBits.ReadMessageHistory,
+      ],
+      type: OverwriteType.Member,
+    },
+  ];
+
+  if (cfg.ticketSupportRoleId) {
+    overwrites.push({
+      id: cfg.ticketSupportRoleId,
+      allow: [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.ReadMessageHistory,
+        PermissionFlagsBits.AttachFiles,
+        PermissionFlagsBits.ManageMessages,
+      ],
+      type: OverwriteType.Role,
+    } as never);
+  }
+
   const channel = await interaction.guild.channels.create({
-    name: `ticket-${interaction.user.username}`.slice(0, 100),
+    name: `ticket-${interaction.user.username}`.toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 90),
     type: ChannelType.GuildText,
-    permissionOverwrites: [
-      {
-        id: interaction.guild.id,
-        deny: [PermissionFlagsBits.ViewChannel],
-        type: OverwriteType.Role,
-      },
-      {
-        id: interaction.user.id,
-        allow: [
-          PermissionFlagsBits.ViewChannel,
-          PermissionFlagsBits.SendMessages,
-          PermissionFlagsBits.AttachFiles,
-          PermissionFlagsBits.ReadMessageHistory,
-        ],
-        type: OverwriteType.Member,
-      },
-      {
-        id: client.user!.id,
-        allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels],
-        type: OverwriteType.Member,
-      },
-    ],
+    parent: cfg.ticketCategoryId ?? undefined,
+    topic: `ticket:${interaction.user.id}`,
+    permissionOverwrites: overwrites,
     reason: `Ticket | ${interaction.user.tag}`,
   });
 
-  const embed = new EmbedBuilder()
-    .setColor(0x5865f2)
-    .setTitle("🎫 Destek Talebi")
+  const { Theme, baseEmbed, line, kv } = await import("../utils/embeds.js");
+  const embed = baseEmbed(Theme.primary)
+    .setAuthor({ name: "TICKET" })
+    .setTitle("Destek talebi")
     .setDescription(
-      `Merhaba ${interaction.user},\n\nSorununu detaylı anlat.\nYetkililer en kısa sürede bakacak.\n\nKapatmak için aşağıdaki butonu kullan.`
+      [
+        line(),
+        `Merhaba ${interaction.user}`,
+        "Sorununu net yaz. Ekip en kısa sürede dönecek.",
+        line(),
+        kv("Sahip", interaction.user.tag),
+        line(),
+      ].join("\n")
     )
-    .setTimestamp();
+    .setFooter({ text: "Yuta" });
 
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
+      .setCustomId("ticket_claim")
+      .setLabel("Üstlen")
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
       .setCustomId("ticket_close")
-      .setLabel("Ticket'ı Kapat")
+      .setLabel("Kapat")
       .setStyle(ButtonStyle.Danger)
-      .setEmoji("🔒")
   );
 
-  await channel.send({ content: `${interaction.user}`, embeds: [embed], components: [row] });
-  await interaction.editReply({ content: `Ticket oluşturuldu: ${channel}` });
+  const ping = cfg.ticketSupportRoleId
+    ? `${interaction.user} · <@&${cfg.ticketSupportRoleId}>`
+    : `${interaction.user}`;
+
+  await channel.send({ content: ping, embeds: [embed], components: [row] });
+  await interaction.editReply({ content: `Ticket açıldı: ${channel}` });
 }
 
-async function handleTicketClose(interaction: ButtonInteraction): Promise<void> {
+async function handleTicketClaim(interaction: ButtonInteraction): Promise<void> {
+  if (!interaction.channel || !interaction.guild) return;
+  await interaction.reply({
+    embeds: [
+      (await import("../utils/embeds.js")).baseEmbed((await import("../utils/embeds.js")).Theme.success)
+        .setAuthor({ name: "TICKET" })
+        .setDescription(`**${interaction.user.tag}** bu ticket'ı üstlendi.`),
+    ],
+  });
+}
+
+async function handleTicketClose(client: YutaClient, interaction: ButtonInteraction): Promise<void> {
   if (!interaction.channel || !interaction.guild) return;
 
-  await interaction.reply({ content: "Ticket 5 saniye içinde kapatılıyor..." });
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId("ticket_close_confirm")
+      .setLabel("Evet, kapat")
+      .setStyle(ButtonStyle.Danger),
+  );
+
+  const { Theme, baseEmbed, line } = await import("../utils/embeds.js");
+  await interaction.reply({
+    embeds: [
+      baseEmbed(Theme.warning)
+        .setAuthor({ name: "TICKET" })
+        .setDescription([line(), "Ticket kapatılsın mı? Transcript alınacak.", line()].join("\n")),
+    ],
+    components: [row],
+    ephemeral: true,
+  });
+}
+
+async function handleTicketCloseConfirm(
+  client: YutaClient,
+  interaction: ButtonInteraction
+): Promise<void> {
+  if (!interaction.channel || !interaction.guild || !interaction.channel.isTextBased()) return;
+  if (interaction.channel.isDMBased()) return;
+
+  await interaction.update({ content: "Kapatılıyor…", embeds: [], components: [] }).catch(() => null);
+
+  const channel = interaction.channel as TextChannel;
+  let transcript = `Ticket transcript · ${channel.name}\nGuild: ${interaction.guild.name}\nClosed by: ${interaction.user.tag}\nDate: ${new Date().toISOString()}\n${"=".repeat(40)}\n\n`;
+
+  try {
+    let lastId: string | undefined;
+    const lines: string[] = [];
+    for (let i = 0; i < 10; i++) {
+      const batch = await channel.messages.fetch({ limit: 100, ...(lastId ? { before: lastId } : {}) });
+      if (batch.size === 0) break;
+      const sorted = [...batch.values()].sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+      for (const m of sorted) {
+        const time = new Date(m.createdTimestamp).toISOString();
+        lines.push(`[${time}] ${m.author.tag}: ${m.content || "[embed/ek]"}`);
+      }
+      lastId = batch.last()?.id;
+      if (batch.size < 100) break;
+    }
+    transcript += lines.join("\n");
+  } catch {
+    transcript += "(mesajlar alınamadı)\n";
+  }
+
+  const cfg = client.settings.get(interaction.guild.id);
+  const buf = Buffer.from(transcript, "utf8");
+  const file = {
+    attachment: buf,
+    name: `transcript-${channel.name}-${Date.now()}.txt`,
+  };
+
+  if (cfg.ticketLogChannelId) {
+    try {
+      const logCh = await client.channels.fetch(cfg.ticketLogChannelId);
+      if (logCh && logCh.isTextBased() && !logCh.isDMBased()) {
+        const { Theme, baseEmbed, line, kv } = await import("../utils/embeds.js");
+        await logCh.send({
+          embeds: [
+            baseEmbed(Theme.mute)
+              .setAuthor({ name: "TICKET · KAPANDI" })
+              .setDescription(
+                [
+                  line(),
+                  kv("Kanal", channel.name),
+                  kv("Kapatan", interaction.user.tag),
+                  line(),
+                ].join("\n")
+              ),
+          ],
+          files: [file],
+        });
+      }
+    } catch (err) {
+      client.logger.error(err, "ticket transcript log");
+    }
+  }
+
   setTimeout(async () => {
     try {
-      await interaction.channel?.delete("Ticket kapatıldı");
+      await channel.delete(`Ticket closed by ${interaction.user.tag}`);
     } catch {
-      // already deleted
+      /* gone */
     }
-  }, 5000);
+  }, 2500);
 }
 
 async function handleConfession(client: YutaClient, interaction: ModalSubmitInteraction): Promise<void> {

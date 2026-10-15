@@ -29,7 +29,11 @@ export interface GuildConfig {
   automodMaxMentions: number;
   automodBadwords: string[];
   automodIgnoreChannels: string[];
+  ticketCategoryId: string | null;
+  ticketSupportRoleId: string | null;
+  ticketLogChannelId: string | null;
 }
+
 
 
 type SettingsDump = Record<string, GuildConfig>;
@@ -61,7 +65,11 @@ const DEFAULTS: GuildConfig = {
   automodMaxMentions: 5,
   automodBadwords: [],
   automodIgnoreChannels: [],
+  ticketCategoryId: null,
+  ticketSupportRoleId: null,
+  ticketLogChannelId: null,
 };
+
 
 
 export class GuildSettings {
@@ -225,6 +233,18 @@ export class GuildSettings {
       automodMaxMentions: number;
       automodBadwords: string[];
       automodIgnoreChannels: string[];
+    }>
+  ): void {
+    this.mutate(guildId, patch);
+  }
+
+
+  public setTicket(
+    guildId: string,
+    patch: Partial<{
+      ticketCategoryId: string | null;
+      ticketSupportRoleId: string | null;
+      ticketLogChannelId: string | null;
     }>
   ): void {
     this.mutate(guildId, patch);
