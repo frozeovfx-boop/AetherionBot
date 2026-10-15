@@ -22,7 +22,12 @@ export interface GuildConfig {
   messageLogChannelId: string | null;
   memberLogChannelId: string | null;
   voiceLogChannelId: string | null;
+  automodAntiInvite: boolean;
+  automodAntiLink: boolean;
+  automodAntiSpam: boolean;
+  automodMaxMentions: number;
 }
+
 
 type SettingsDump = Record<string, GuildConfig>;
 
@@ -46,7 +51,12 @@ const DEFAULTS: GuildConfig = {
   messageLogChannelId: null,
   memberLogChannelId: null,
   voiceLogChannelId: null,
+  automodAntiInvite: false,
+  automodAntiLink: false,
+  automodAntiSpam: false,
+  automodMaxMentions: 5,
 };
+
 
 export class GuildSettings {
   private data = new Collection<string, GuildConfig>();
@@ -194,6 +204,19 @@ export class GuildSettings {
 
   public setVoiceLog(guildId: string, channelId: string | null): void {
     this.mutate(guildId, { voiceLogChannelId: channelId });
+  }
+
+
+  public setAutomod(
+    guildId: string,
+    patch: Partial<{
+      automodAntiInvite: boolean;
+      automodAntiLink: boolean;
+      automodAntiSpam: boolean;
+      automodMaxMentions: number;
+    }>
+  ): void {
+    this.mutate(guildId, patch);
   }
 
   public getPrefix(guildId: string): string {

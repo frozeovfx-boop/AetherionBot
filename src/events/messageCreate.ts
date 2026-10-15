@@ -1,4 +1,4 @@
-import { Events, Message, Collection } from "discord.js";
+import { Events, Message, Collection, PermissionFlagsBits } from "discord.js";
 import { Event } from "../structures/Event.js";
 import type { YutaClient } from "../client/YutaClient.js";
 import { afkMap } from "../commands/utility/afk.js";
@@ -15,6 +15,9 @@ export default class MessageCreateEvent extends Event<typeof Events.MessageCreat
 
   public async execute(client: YutaClient, message: Message): Promise<void> {
     if (message.author.bot || !message.guild) return;
+
+    // Automod (before stats / commands)
+    if (await runAutomod(client, message)) return;
 
     // Seen tracker
     client.seen.touch(message.author.id);
@@ -164,3 +167,73 @@ export default class MessageCreateEvent extends Event<typeof Events.MessageCreat
     }
   }
 }
+
+
+const INVITE_RE = /(?:https?:\/\/)?(?:www\.)?(?:discord\.gg|discord(?:app)?\.com\/invite)\/[a-zA-Z0-9-]+/i;
+const LINK_RE = /https?:\/\/[^\s<]+/i;
+const spamMap = new Map<string, number[]>();
+
+async function runAutomod(client: YutaClient, message: Message): Promise<boolean> {
+  if (!message.guild || !message.member) return false;
+  if (message.member.permissions.has(PermissionFlagsBits.ManageMessages)) return false;
+
+  const cfg = client.settings.get(message.guild.id);
+  const content = message.content ?? "";
+
+  // Anti-invite
+  if (cfg.automodAntiInvite && INVITE_RE.test(content)) {
+    await message.delete().catch(() => null);
+    await message.channel
+      .send({ content: `${message.author} davet linki engellendi.` })
+      .then((m) => setTimeout(() => m.delete().catch(() => null), 5000))
+      .catch(() => null);
+    return true;
+  }
+
+  // Anti-link
+  if (cfg.automodAntiLink && LINK_RE.test(content)) {
+    await message.delete().catch(() => null);
+    await message.channel
+      .send({ content: `${message.author} link engellendi.` })
+      .then((m) => setTimeout(() => m.delete().catch(() => null), 5000))
+      .catch(() => null);
+    return true;
+  }
+
+  // Max mentions
+  if (cfg.automodMaxMentions > 0) {
+    const count = message.mentions.users.size + message.mentions.roles.size;
+    if (count > cfg.automodMaxMentions) {
+      await message.delete().catch(() => null);
+      await message.channel
+        .send({ content: `${message.author} fazla etiket engellendi.` })
+        .then((m) => setTimeout(() => m.delete().catch(() => null), 5000))
+        .catch(() => null);
+      return true;
+    }
+  }
+
+  // Simple spam: 5 messages in 4s
+  if (cfg.automodAntiSpam) {
+    const key = `${message.guild.id}:${message.author.id}`;
+    const now = Date.now();
+    const arr = (spamMap.get(key) ?? []).filter((t) => now - t < 4000);
+    arr.push(now);
+    spamMap.set(key, arr);
+    if (arr.length >= 5) {
+      spamMap.set(key, []);
+      await message.delete().catch(() => null);
+      if (message.member.moderatable) {
+        await message.member.timeout(30_000, "Automod spam").catch(() => null);
+      }
+      await message.channel
+        .send({ content: `${message.author} spam — 30s timeout.` })
+        .then((m) => setTimeout(() => m.delete().catch(() => null), 5000))
+        .catch(() => null);
+      return true;
+    }
+  }
+
+  return false;
+}
+
