@@ -7,6 +7,8 @@ import {
 } from "discord.js";
 import { Event } from "../structures/Event.js";
 import type { AetherionClient } from "../client/AetherionClient.js";
+import { sendGuildLog } from "../utils/guildLog.js";
+import { Theme, baseEmbed, line, kv } from "../utils/embeds.js";
 
 /** guildId:userId -> join timestamp (XP) */
 const voiceJoined = new Collection<string, number>();
@@ -31,6 +33,9 @@ export default class VoiceStateUpdateEvent extends Event<typeof Events.VoiceStat
     if (!member || member.user.bot) return;
     const guild = newState.guild;
     if (!guild) return;
+
+    // ── Voice log ──
+    await logVoice(client, oldState, newState, member).catch(() => null);
 
     // ── Temp voice (özel oda) ──
     await handleTempVoice(client, oldState, newState).catch((err) =>
@@ -147,4 +152,50 @@ async function handleTempVoice(
       await ch.delete("Özel oda boş").catch(() => null);
     }
   }
+}
+
+async function logVoice(
+  client: AetherionClient,
+  oldState: VoiceState,
+  newState: VoiceState,
+  member: NonNullable<VoiceState["member"]>
+): Promise<void> {
+  const guild = newState.guild;
+  const cfg = client.settings.get(guild.id);
+  if (!cfg.voiceLogChannelId) return;
+
+  const joined = !oldState.channelId && newState.channelId;
+  const left = oldState.channelId && !newState.channelId;
+  const moved =
+    oldState.channelId &&
+    newState.channelId &&
+    oldState.channelId !== newState.channelId;
+
+  if (!joined && !left && !moved) return;
+
+  let title = "SES";
+  let color = Theme.info;
+  const rows = [line(), kv("Kullanıcı", member.user.tag)];
+
+  if (joined) {
+    title = "SES · GİRİŞ";
+    color = Theme.success;
+    rows.push(kv("Kanal", `${newState.channel}`));
+  } else if (left) {
+    title = "SES · ÇIKIŞ";
+    color = Theme.mute;
+    rows.push(kv("Kanal", `${oldState.channel}`));
+  } else if (moved) {
+    title = "SES · TAŞINDI";
+    color = Theme.info;
+    rows.push(kv("Eski", `${oldState.channel}`));
+    rows.push(kv("Yeni", `${newState.channel}`));
+  }
+  rows.push(line());
+
+  const embed = baseEmbed(color)
+    .setAuthor({ name: title, iconURL: member.user.displayAvatarURL({ size: 64 }) })
+    .setDescription(rows.join("\n"));
+
+  await sendGuildLog(client, guild.id, "voice", embed);
 }

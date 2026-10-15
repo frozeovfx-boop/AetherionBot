@@ -16,11 +16,12 @@ export interface GuildConfig {
   sticky: Record<string, string>;
   tags: Record<string, string>;
   conseilRoles: Record<string, string>;
-  /** Join-to-create hub voice channel */
   tempVoiceHubId: string | null;
-  /** Category for temp voice rooms */
   tempVoiceCategoryId: string | null;
   inviteLogChannelId: string | null;
+  messageLogChannelId: string | null;
+  memberLogChannelId: string | null;
+  voiceLogChannelId: string | null;
 }
 
 type SettingsDump = Record<string, GuildConfig>;
@@ -42,6 +43,9 @@ const DEFAULTS: GuildConfig = {
   tempVoiceHubId: null,
   tempVoiceCategoryId: null,
   inviteLogChannelId: null,
+  messageLogChannelId: null,
+  memberLogChannelId: null,
+  voiceLogChannelId: null,
 };
 
 export class GuildSettings {
@@ -178,6 +182,18 @@ export class GuildSettings {
 
   public setInviteLog(guildId: string, channelId: string | null): void {
     this.mutate(guildId, { inviteLogChannelId: channelId });
+  }
+
+  public setMessageLog(guildId: string, channelId: string | null): void {
+    this.mutate(guildId, { messageLogChannelId: channelId });
+  }
+
+  public setMemberLog(guildId: string, channelId: string | null): void {
+    this.mutate(guildId, { memberLogChannelId: channelId });
+  }
+
+  public setVoiceLog(guildId: string, channelId: string | null): void {
+    this.mutate(guildId, { voiceLogChannelId: channelId });
   }
 
   public getPrefix(guildId: string): string {
