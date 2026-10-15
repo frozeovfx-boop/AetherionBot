@@ -27,7 +27,7 @@ export default class InteractionCreateEvent extends Event<typeof Events.Interact
     client: YutaClient,
     interaction: ChatInputCommandInteraction | ButtonInteraction | ModalSubmitInteraction | StringSelectMenuInteraction
   ): Promise<void> {
-    if (interaction.isButton() && interaction.customId === "ticket_create") {
+    if (interaction.isButton() && interaction.customId.startsWith("ticket_create")) {
       await handleTicketCreate(client, interaction);
       return;
     }
@@ -115,11 +115,20 @@ export default class InteractionCreateEvent extends Event<typeof Events.Interact
 async function handleTicketCreate(client: YutaClient, interaction: ButtonInteraction): Promise<void> {
   if (!interaction.guild || !interaction.member) return;
 
+  const typeId = interaction.customId.includes(":")
+    ? interaction.customId.split(":")[1] ?? "destek"
+    : "destek";
+  const cfg = client.settings.get(interaction.guild.id);
+  const btnMeta =
+    cfg.ticketButtons.find((b) => b.id === typeId) ??
+    ({ id: typeId, label: typeId, style: "Primary" } as const);
+
   const existing = interaction.guild.channels.cache.find(
     (c) =>
       c.isTextBased() &&
       "topic" in c &&
-      (c as TextChannel).topic === `ticket:${interaction.user.id}`
+      typeof (c as TextChannel).topic === "string" &&
+      (c as TextChannel).topic!.startsWith(`ticket:${interaction.user.id}`)
   );
 
   if (existing) {
@@ -127,18 +136,8 @@ async function handleTicketCreate(client: YutaClient, interaction: ButtonInterac
     return;
   }
 
-  // fallback name search
-  const byName = interaction.guild.channels.cache.find(
-    (c) => c.name.startsWith("ticket-") && c.isTextBased() && (c as TextChannel).topic === `ticket:${interaction.user.id}`
-  );
-  if (byName) {
-    await interaction.reply({ content: `Zaten açık ticket: ${byName}`, ephemeral: true });
-    return;
-  }
-
   await interaction.deferReply({ ephemeral: true });
 
-  const cfg = client.settings.get(interaction.guild.id);
   const overwrites = [
     {
       id: interaction.guild.id,
@@ -182,10 +181,10 @@ async function handleTicketCreate(client: YutaClient, interaction: ButtonInterac
   }
 
   const channel = await interaction.guild.channels.create({
-    name: `ticket-${interaction.user.username}`.toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 90),
+    name: `ticket-${typeId}-${interaction.user.username}`.toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 90),
     type: ChannelType.GuildText,
     parent: cfg.ticketCategoryId ?? undefined,
-    topic: `ticket:${interaction.user.id}`,
+    topic: `ticket:${interaction.user.id}:${typeId}`,
     permissionOverwrites: overwrites,
     reason: `Ticket | ${interaction.user.tag}`,
   });
@@ -193,16 +192,20 @@ async function handleTicketCreate(client: YutaClient, interaction: ButtonInterac
   const { Theme, baseEmbed, line, kv } = await import("../utils/embeds.js");
   const embed = baseEmbed(Theme.primary)
     .setAuthor({ name: "TICKET" })
-    .setTitle("Destek talebi")
+    .setTitle(`${btnMeta.label}`)
     .setDescription(
       [
         line(),
         `Merhaba ${interaction.user}`,
         "Sorununu net yaz. Ekip en kısa sürede dönecek.",
         line(),
+        kv("Tür", btnMeta.label),
         kv("Sahip", interaction.user.tag),
+        btnMeta.description ? kv("Not", btnMeta.description) : null,
         line(),
-      ].join("\n")
+      ]
+        .filter(Boolean)
+        .join("\n")
     )
     .setFooter({ text: "Yuta" });
 

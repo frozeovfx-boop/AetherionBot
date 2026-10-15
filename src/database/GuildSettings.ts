@@ -2,7 +2,15 @@ import { Collection } from "discord.js";
 import { JsonStore } from "./JsonStore.js";
 import type { Locale } from "../i18n/index.js";
 
+export interface TicketButton {
+  id: string;
+  label: string;
+  style: "Primary" | "Secondary" | "Success" | "Danger";
+  description?: string;
+}
+
 export interface GuildConfig {
+
   prefix: string;
   locale: Locale;
   modlogChannelId: string | null;
@@ -32,7 +40,9 @@ export interface GuildConfig {
   ticketCategoryId: string | null;
   ticketSupportRoleId: string | null;
   ticketLogChannelId: string | null;
+  ticketButtons: TicketButton[];
 }
+
 
 
 
@@ -68,7 +78,11 @@ const DEFAULTS: GuildConfig = {
   ticketCategoryId: null,
   ticketSupportRoleId: null,
   ticketLogChannelId: null,
+  ticketButtons: [
+    { id: "destek", label: "Destek", style: "Primary" },
+  ],
 };
+
 
 
 
@@ -92,6 +106,10 @@ export class GuildSettings {
         starboardMin: cfg.starboardMin ?? 3,
         automodBadwords: cfg.automodBadwords ?? [],
         automodIgnoreChannels: cfg.automodIgnoreChannels ?? [],
+        ticketButtons:
+          cfg.ticketButtons?.length
+            ? cfg.ticketButtons
+            : [{ id: "destek", label: "Destek", style: "Primary" }],
       });
     }
     this.ready = true;
@@ -238,6 +256,11 @@ export class GuildSettings {
     this.mutate(guildId, patch);
   }
 
+
+
+  public setTicketButtons(guildId: string, buttons: TicketButton[]): void {
+    this.mutate(guildId, { ticketButtons: buttons.slice(0, 5) });
+  }
 
   public setTicket(
     guildId: string,
