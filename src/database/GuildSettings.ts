@@ -25,7 +25,10 @@ export interface GuildConfig {
   automodAntiInvite: boolean;
   automodAntiLink: boolean;
   automodAntiSpam: boolean;
+  automodAntiBadwords: boolean;
   automodMaxMentions: number;
+  automodBadwords: string[];
+  automodIgnoreChannels: string[];
 }
 
 
@@ -54,7 +57,10 @@ const DEFAULTS: GuildConfig = {
   automodAntiInvite: false,
   automodAntiLink: false,
   automodAntiSpam: false,
+  automodAntiBadwords: false,
   automodMaxMentions: 5,
+  automodBadwords: [],
+  automodIgnoreChannels: [],
 };
 
 
@@ -76,6 +82,8 @@ export class GuildSettings {
         tags: cfg.tags ?? {},
         conseilRoles: cfg.conseilRoles ?? {},
         starboardMin: cfg.starboardMin ?? 3,
+        automodBadwords: cfg.automodBadwords ?? [],
+        automodIgnoreChannels: cfg.automodIgnoreChannels ?? [],
       });
     }
     this.ready = true;
@@ -213,7 +221,10 @@ export class GuildSettings {
       automodAntiInvite: boolean;
       automodAntiLink: boolean;
       automodAntiSpam: boolean;
+      automodAntiBadwords: boolean;
       automodMaxMentions: number;
+      automodBadwords: string[];
+      automodIgnoreChannels: string[];
     }>
   ): void {
     this.mutate(guildId, patch);
