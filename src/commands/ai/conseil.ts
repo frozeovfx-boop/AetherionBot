@@ -18,6 +18,7 @@ import {
   availableProviders,
   hasAnyProvider,
   labelOf,
+  askAI,
   type AIProviderName,
 } from "../../ai/providers.js";
 
@@ -66,6 +67,20 @@ export default class ConseilCommand extends Command {
               o.setName("soru").setDescription("Soru").setRequired(true)
             )
         )
+        
+        .addSubcommand((s) =>
+          s
+            .setName("ozet")
+            .setDescription("Son moderasyon kayıtlarının AI özeti (yetkili)")
+            .addIntegerOption((o) =>
+              o
+                .setName("adet")
+                .setDescription("Kaç case (varsayılan 15)")
+                .setMinValue(5)
+                .setMaxValue(40)
+                .setRequired(false)
+            )
+        )
         .addSubcommand((s) =>
           s
             .setName("set_roles")
@@ -106,6 +121,80 @@ export default class ConseilCommand extends Command {
 
   public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const sub = interaction.options.getSubcommand();
+
+    if (sub === "ozet") {
+      if (!interaction.guild) {
+        await interaction.reply({ content: "Sadece sunucuda.", ephemeral: true });
+        return;
+      }
+      if (!interaction.memberPermissions?.has(PermissionFlagsBits.ModerateMembers) &&
+          !interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+        await interaction.reply({ content: "Yetkin yok (Moderate Members).", ephemeral: true });
+        return;
+      }
+      if (!hasAnyProvider()) {
+        await interaction.reply({
+          embeds: [
+            conseilEmbed(ConseilTheme.primary)
+              .setDescription("AI key yok. `.env` içine en az bir provider key ekle."),
+          ],
+          ephemeral: true,
+        });
+        return;
+      }
+
+      const limit = interaction.options.getInteger("adet") ?? 15;
+      const cases = client.cases.getGuildCases(interaction.guild.id, limit);
+      if (!cases.length) {
+        await interaction.reply({
+          embeds: [
+            conseilEmbed(ConseilTheme.primary)
+              .setAuthor({ name: "CONSEIL · ÖZET" })
+              .setDescription("Henüz moderasyon kaydı yok."),
+          ],
+          ephemeral: true,
+        });
+        return;
+      }
+
+      await interaction.deferReply({ ephemeral: true });
+
+      const lines = cases.map(
+        (c) =>
+          `#${c.id} ${c.type} user=${c.userId} mod=${c.moderatorId} reason=${(c.reason || "-").slice(0, 80)} active=${c.active}`
+      );
+      const prompt = [
+        "Aşağıdaki Discord moderasyon case listesini analiz et.",
+        "Türkçe, kısa, yetkiliye yönelik özet yaz.",
+        "Tekrarlayan kullanıcılar, sık ceza tipleri, risk notları belirt.",
+        "Abartma; sadece veriye dayan.",
+        "",
+        lines.join("\n"),
+      ].join("\n");
+
+      try {
+        const result = await askAI(
+          prompt,
+          "Sen deneyimli bir Discord moderasyon analistisin. Net ve profesyonel özetle. 1200 karakteri geçme."
+        );
+        await interaction.editReply({
+          embeds: [
+            conseilEmbed(ConseilTheme.primary)
+              .setAuthor({ name: "CONSEIL · MOD ÖZET" })
+              .setDescription(
+                [line(), result.text.slice(0, 3500), line(), kv("Kayıt", code(cases.length)), kv("Model", labelOf(result.provider))].join("\n")
+              ),
+          ],
+        });
+      } catch (e) {
+        await interaction.editReply({
+          content: `Özet alınamadı: ${e instanceof Error ? e.message : "hata"}`,
+        });
+      }
+      return;
+    }
+
+
 
     if (sub === "status") {
       const avail = availableProviders();

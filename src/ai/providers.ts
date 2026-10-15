@@ -8,7 +8,7 @@ export interface AIResult {
 }
 
 const DEFAULT_SYSTEM =
-  "You are Megumi, a concise and helpful Discord assistant. Answer clearly in the user's language. Keep answers under 1500 characters unless asked for detail.";
+  "You are Yuta, a concise and helpful Discord assistant. Answer clearly in the user's language. Keep answers under 1500 characters unless asked for detail.";
 
 /**
  * Multi-provider AI. No SDK deps — plain fetch.

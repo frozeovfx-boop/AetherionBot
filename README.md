@@ -1,100 +1,69 @@
 # Yuta
 
-Saitama-level Discord platform.
+Sade, güçlü Discord botu (discord.js v14 · TypeScript).
 
-Clean. Powerful. Production-ready.  
-500+ commands. Zero fluff.
+## Hızlı kurulum
 
-## Stack
-
-- TypeScript (strict)
-- discord.js v14
-- PostgreSQL + Redis
-- BullMQ
-- Lavalink
-- Multi-AI providers (Grok, Claude, GPT, Gemini)
-- Docker ready
-
-## Philosophy
-
-Simple on the surface.  
-Overwhelmingly capable underneath.  
-No unnecessary complexity.  
-No half-finished features.  
-Every command works perfectly from day one.
-
-## Getting Started
+1. [Discord Developer Portal](https://discord.com/developers/applications) → uygulama + bot oluştur  
+2. Privileged intents: **Server Members**, **Message Content**, **Presence** (gerekirse)  
+3. Repo’yu clone / Railway / host’a bağla  
 
 ```bash
 cp .env.example .env
-# fill in your tokens
-
 npm install
-npm run dev
+npm start
 ```
 
-## Structure
+## Zorunlu env
 
 ```
-src/
-├── client/          # Discord client setup
-├── config/          # Configuration & validation
-├── structures/      # Base Command, Event, ContextMenu
-├── handlers/        # Command & Event loaders
-├── commands/        # All 500+ commands (categorized)
-├── events/          # Discord events
-├── database/        # Prisma / Postgres + Redis
-├── queues/          # BullMQ workers
-├── music/           # Lavalink manager
-├── ai/              # Multi-provider AI layer
-├── utils/           # Helpers
-└── types/           # Shared types
+DISCORD_TOKEN=
+DISCORD_CLIENT_ID=
+# opsiyonel: tek sunucu deploy
+DISCORD_GUILD_ID=
+PREFIX=!
+OWNER_IDS=id1,id2
 ```
 
-## License
-
-MIT
-
-## Persistence
-
-Runtime data is stored under `data/` (JSON):
-
-| File | Contents |
-|------|----------|
-| `economy.json` | wallets, bank, XP |
-| `cases.json` | moderation cases |
-| `guilds.json` | prefix + language |
-| `inventory.json` | shop purchases |
-
-Survives restarts on the same host volume.
-
-## AI
-
-Set **one** of these env vars:
+## Opsiyonel
 
 ```
+# AI (en az biri)
 GROK_API_KEY=
 OPENAI_API_KEY=
 ANTHROPIC_API_KEY=
 GOOGLE_API_KEY=
+
+# Müzik
+LAVALINK_HOST=
+LAVALINK_PORT=
+LAVALINK_PASSWORD=
 ```
 
-Commands: `/ask` · `/aistatus`
+## Önemli komutlar
 
-## Music / Lavalink
+| Alan | Komut |
+|------|--------|
+| Yardım | `/help` |
+| Prefix / dil | `/setprefix` `/setlanguage` |
+| Modlog | `/setmodlog` |
+| Welcome | `/setwelcome` |
+| Self-role | `/selfrole` |
+| Log | `/logset` |
+| Automod | `/automod` |
+| Ticket | `/ticket-setup` |
+| Özel oda | `/ozeloda` |
+| Davet | `/davet` |
+| Çekiliş | `/giveaway` · `/sans` |
+| Stat | `/stat` |
+| AI | `/ask` `/conseil` |
 
-Queue works without Lavalink. For real search metadata:
+## Notlar
 
-```bash
-docker compose -f docker-compose.lavalink.yml up -d
-```
+- Slash limiti ~100; prefix ile ek komutlar çalışır  
+- Veri: `data/*.json` (restart’ta kalır)  
+- Bot adı Discord’dan **Yuta** yapılabilir; kod footer’ı Yuta  
 
-```
-LAVALINK_HOST=127.0.0.1
-LAVALINK_PORT=2333
-LAVALINK_PASSWORD=youshallnotpass
-```
+## Lisans / isim
 
-`/musicstatus` · `/play` · `/queue`
-
-> Full Discord voice streaming needs a live Lavalink session + voice gateway. Free shared hosts often cannot run both bot + Lavalink; use a VPS or separate node.
+Fan project. JJK ile resmi bağ yoktur.
