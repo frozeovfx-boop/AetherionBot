@@ -19,6 +19,7 @@ import { BirthdayManager } from "../database/BirthdayManager.js";
 import { InviteManager } from "../database/InviteManager.js";
 import { SelfRoleManager } from "../database/SelfRoleManager.js";
 import { StatsManager } from "../database/StatsManager.js";
+import { GiveawayManager } from "../database/GiveawayManager.js";
 
 export class YutaClient extends Client {
   public commands = new Collection<string, Command>();
@@ -37,6 +38,7 @@ export class YutaClient extends Client {
   public readonly invites = new InviteManager();
   public readonly selfroles = new SelfRoleManager();
   public readonly stats = new StatsManager();
+  public readonly giveaways = new GiveawayManager();
 
   constructor() {
     super({

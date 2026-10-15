@@ -4,9 +4,11 @@ import {
   PermissionFlagsBits,
   TextChannel,
 } from "discord.js";
+import { randomBytes } from "node:crypto";
 import { Command } from "../../structures/Command.js";
 import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
+import { endGiveaway } from "../../utils/giveawayEnd.js";
 
 function parseDuration(input: string): number | null {
   const match = input.match(/^(\d+)(s|m|h|d)$/i);
@@ -21,21 +23,48 @@ export default class GiveawayCommand extends Command {
   constructor() {
     super({
       name: "giveaway",
-      description: "Çekiliş başlatır",
+      description: "Çekiliş sistemi",
       category: "server",
-      cooldown: 10,
+      cooldown: 5,
       guildOnly: true,
       permissions: [PermissionFlagsBits.ManageGuild],
       data: new SlashCommandBuilder()
         .setName("giveaway")
-        .setDescription("Çekiliş başlatır")
-        .addStringOption((o) => o.setName("odul").setDescription("Ödül").setRequired(true))
-        .addStringOption((o) =>
-          o.setName("sure").setDescription("Süre (30m, 2h, 1d)").setRequired(true)
+        .setDescription("Çekiliş sistemi")
+        .addSubcommand((s) =>
+          s
+            .setName("baslat")
+            .setDescription("Çekiliş başlat")
+            .addStringOption((o) => o.setName("odul").setRequired(true).setDescription("Ödül"))
+            .addStringOption((o) =>
+              o.setName("sure").setRequired(true).setDescription("30m, 2h, 1d")
+            )
+            .addIntegerOption((o) =>
+              o
+                .setName("kazanan")
+                .setDescription("Kazanan sayısı")
+                .setMinValue(1)
+                .setMaxValue(20)
+                .setRequired(false)
+            )
         )
-        .addIntegerOption((o) =>
-          o.setName("kazanan").setDescription("Kazanan sayısı").setMinValue(1).setMaxValue(20).setRequired(false)
+        .addSubcommand((s) =>
+          s
+            .setName("bitir")
+            .setDescription("Çekilişi şimdi bitir")
+            .addStringOption((o) =>
+              o.setName("mesaj_id").setDescription("Çekiliş mesaj ID").setRequired(true)
+            )
         )
+        .addSubcommand((s) =>
+          s
+            .setName("yeniden")
+            .setDescription("Kazananı yeniden seç")
+            .addStringOption((o) =>
+              o.setName("mesaj_id").setDescription("Çekiliş mesaj ID").setRequired(true)
+            )
+        )
+        .addSubcommand((s) => s.setName("liste").setDescription("Aktif çekilişler"))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
         .toJSON(),
     });
@@ -43,7 +72,64 @@ export default class GiveawayCommand extends Command {
 
   public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild || !interaction.channel) return;
+    const sub = interaction.options.getSubcommand();
 
+    if (sub === "liste") {
+      const active = client.giveaways.active().filter((g) => g.guildId === interaction.guild!.id);
+      if (!active.length) {
+        await interaction.reply({
+          embeds: [baseEmbed(Theme.mute).setDescription("Aktif çekiliş yok.")],
+          ephemeral: true,
+        });
+        return;
+      }
+      const rows = active.map(
+        (g) =>
+          `${code(g.messageId)} · ${g.prize} · bitiş <t:${Math.floor(g.endsAt / 1000)}:R>`
+      );
+      await interaction.reply({
+        embeds: [
+          baseEmbed(Theme.primary)
+            .setAuthor({ name: "GIVEAWAY" })
+            .setDescription([line(), rows.join("\n"), line()].join("\n")),
+        ],
+        ephemeral: true,
+      });
+      return;
+    }
+
+    if (sub === "bitir" || sub === "yeniden") {
+      const messageId = interaction.options.getString("mesaj_id", true);
+      const g =
+        client.giveaways.getByMessage(messageId) ??
+        client.giveaways.get(messageId);
+      if (!g || g.guildId !== interaction.guild.id) {
+        await interaction.reply({
+          embeds: [baseEmbed(Theme.warning).setDescription("Çekiliş bulunamadı.")],
+          ephemeral: true,
+        });
+        return;
+      }
+      if (sub === "bitir" && g.ended) {
+        await interaction.reply({
+          embeds: [baseEmbed(Theme.mute).setDescription("Zaten bitmiş.")],
+          ephemeral: true,
+        });
+        return;
+      }
+      // reroll: allow ended
+      if (sub === "yeniden") {
+        g.ended = false;
+      }
+      await interaction.reply({
+        embeds: [baseEmbed(Theme.success).setDescription(sub === "bitir" ? "Bitiriliyor…" : "Yeniden seçiliyor…")],
+        ephemeral: true,
+      });
+      await endGiveaway(client, g, sub === "yeniden");
+      return;
+    }
+
+    // baslat
     const prize = interaction.options.getString("odul", true);
     const durationStr = interaction.options.getString("sure", true);
     const winners = interaction.options.getInteger("kazanan") ?? 1;
@@ -51,15 +137,14 @@ export default class GiveawayCommand extends Command {
 
     if (!ms || ms < 10_000 || ms > 30 * 86_400_000) {
       await interaction.reply({
-        embeds: [
-          baseEmbed(Theme.warning).setDescription("Geçersiz süre. Örnek: `30m` `2h` `1d`"),
-        ],
+        embeds: [baseEmbed(Theme.warning).setDescription("Geçersiz süre. Örnek: `30m` `2h` `1d`")],
         ephemeral: true,
       });
       return;
     }
 
     const endsAt = Date.now() + ms;
+    const id = randomBytes(4).toString("hex");
 
     const embed = baseEmbed(Theme.economy)
       .setAuthor({ name: "GIVEAWAY" })
@@ -74,7 +159,7 @@ export default class GiveawayCommand extends Command {
           "Katılmak için 🎉 tepkisine tıkla.",
         ].join("\n")
       )
-      .setFooter({ text: `Başlatan · ${interaction.user.tag}` })
+      .setFooter({ text: `ID ${id} · ${interaction.user.tag}` })
       .setTimestamp(endsAt);
 
     await interaction.reply({
@@ -86,45 +171,20 @@ export default class GiveawayCommand extends Command {
     const msg = await channel.send({ embeds: [embed] });
     await msg.react("🎉");
 
-    setTimeout(async () => {
-      try {
-        const fetched = await msg.fetch();
-        const reaction = fetched.reactions.cache.get("🎉");
-        const users = reaction ? await reaction.users.fetch() : null;
-        const entrants = users?.filter((u) => !u.bot).map((u) => u) ?? [];
-
-        if (entrants.length === 0) {
-          await msg.reply({
-            embeds: [baseEmbed(Theme.mute).setDescription("Kimse katılmadı.")],
-          });
-          return;
-        }
-
-        const selected: string[] = [];
-        const pool = [...entrants];
-        for (let i = 0; i < Math.min(winners, pool.length); i++) {
-          const idx = Math.floor(Math.random() * pool.length);
-          selected.push(pool.splice(idx, 1)[0]!.toString());
-        }
-
-        await msg.reply({
-          embeds: [
-            baseEmbed(Theme.success)
-              .setAuthor({ name: "GIVEAWAY" })
-              .setTitle("Sonuç")
-              .setDescription(
-                [
-                  line(),
-                  kv("Ödül", prize),
-                  kv("Kazananlar", selected.join(", ")),
-                  line(),
-                ].join("\n")
-              ),
-          ],
-        });
-      } catch (error) {
-        client.logger.error(error, "Giveaway end error");
-      }
-    }, ms);
+    const data = {
+      id,
+      guildId: interaction.guild.id,
+      channelId: channel.id,
+      messageId: msg.id,
+      prize,
+      winnersCount: winners,
+      endsAt,
+      hostId: interaction.user.id,
+      ended: false,
+    };
+    client.giveaways.create(data);
+    client.giveaways.schedule(id, ms, () => {
+      void endGiveaway(client, data, false);
+    });
   }
 }

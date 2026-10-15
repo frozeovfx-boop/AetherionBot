@@ -21,6 +21,7 @@ async function main() {
     await client.invites.init();
     await client.selfroles.init();
     await client.stats.init();
+    await client.giveaways.init();
     logger.info("Stores ready: economy · cases · inventory · guilds · seen · capsules · aura · birthdays · stats");
 
     await loadEvents(client);
