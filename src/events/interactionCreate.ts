@@ -4,6 +4,8 @@ import {
   Collection,
   ButtonInteraction,
   ModalSubmitInteraction,
+  StringSelectMenuInteraction,
+  GuildMember,
   ChannelType,
   PermissionFlagsBits,
   EmbedBuilder,
@@ -22,7 +24,7 @@ export default class InteractionCreateEvent extends Event<typeof Events.Interact
 
   public async execute(
     client: AetherionClient,
-    interaction: ChatInputCommandInteraction | ButtonInteraction | ModalSubmitInteraction
+    interaction: ChatInputCommandInteraction | ButtonInteraction | ModalSubmitInteraction | StringSelectMenuInteraction
   ): Promise<void> {
     if (interaction.isButton() && interaction.customId === "ticket_create") {
       await handleTicketCreate(client, interaction);
@@ -36,6 +38,16 @@ export default class InteractionCreateEvent extends Event<typeof Events.Interact
 
     if (interaction.isModalSubmit() && interaction.customId === "confession_modal") {
       await handleConfession(client, interaction);
+      return;
+    }
+
+    if (interaction.isButton() && interaction.customId.startsWith("sr_btn:")) {
+      await handleSelfRoleButton(client, interaction);
+      return;
+    }
+
+    if (interaction.isStringSelectMenu() && interaction.customId.startsWith("sr_menu:")) {
+      await handleSelfRoleMenu(client, interaction);
       return;
     }
 
@@ -195,3 +207,94 @@ async function handleConfession(client: AetherionClient, interaction: ModalSubmi
     await interaction.reply({ content: "Gönderilemedi.", ephemeral: true });
   }
 }
+
+async function handleSelfRoleButton(
+  client: AetherionClient,
+  interaction: ButtonInteraction
+): Promise<void> {
+  // sr_btn:panelId:roleId
+  const parts = interaction.customId.split(":");
+  if (parts.length < 3) return;
+  const panelId = parts[1]!;
+  const roleId = parts[2]!;
+  const panel = client.selfroles.get(panelId);
+  if (!panel || !interaction.guild) {
+    await interaction.reply({ content: "Panel artık yok.", ephemeral: true });
+    return;
+  }
+
+  const member = interaction.member as GuildMember;
+  if (!member || !("roles" in member)) {
+    await interaction.reply({ content: "Üye bilgisi alınamadı.", ephemeral: true });
+    return;
+  }
+
+  const role = interaction.guild.roles.cache.get(roleId);
+  if (!role) {
+    await interaction.reply({ content: "Rol silinmiş.", ephemeral: true });
+    return;
+  }
+
+  try {
+    if (member.roles.cache.has(roleId)) {
+      await member.roles.remove(roleId, "Self-role toggle");
+      await interaction.reply({ content: `Rol alındı: **${role.name}**`, ephemeral: true });
+    } else {
+      await member.roles.add(roleId, "Self-role toggle");
+      await interaction.reply({ content: `Rol verildi: **${role.name}**`, ephemeral: true });
+    }
+  } catch {
+    await interaction.reply({
+      content: "Rol verilemedi. Bot rol sırasını ve yetkilerini kontrol et.",
+      ephemeral: true,
+    });
+  }
+}
+
+async function handleSelfRoleMenu(
+  client: AetherionClient,
+  interaction: StringSelectMenuInteraction
+): Promise<void> {
+  // sr_menu:panelId
+  const panelId = interaction.customId.split(":")[1];
+  if (!panelId) return;
+  const panel = client.selfroles.get(panelId);
+  if (!panel || !interaction.guild) {
+    await interaction.reply({ content: "Panel artık yok.", ephemeral: true });
+    return;
+  }
+
+  const member = interaction.member as GuildMember;
+  if (!member || !("roles" in member)) {
+    await interaction.reply({ content: "Üye bilgisi alınamadı.", ephemeral: true });
+    return;
+  }
+
+  const allowed = new Set(panel.roles.map((r) => r.roleId));
+  const selected = interaction.values.filter((id) => allowed.has(id));
+  const current = member.roles.cache.filter((r) => allowed.has(r.id)).map((r) => r.id);
+
+  const toAdd = selected.filter((id) => !current.includes(id));
+  const toRemove = current.filter((id) => !selected.includes(id));
+
+  try {
+    if (toAdd.length) await member.roles.add(toAdd, "Self-role menu");
+    if (toRemove.length) await member.roles.remove(toRemove, "Self-role menu");
+
+    const names = selected
+      .map((id) => interaction.guild!.roles.cache.get(id)?.name ?? id)
+      .join(", ");
+    await interaction.reply({
+      content: selected.length
+        ? `Rollerin güncellendi: **${names}**`
+        : "Panel rolleri temizlendi.",
+      ephemeral: true,
+    });
+  } catch {
+    await interaction.reply({
+      content: "Rol güncellenemedi. Bot rol sırasını kontrol et.",
+      ephemeral: true,
+    });
+  }
+}
+
