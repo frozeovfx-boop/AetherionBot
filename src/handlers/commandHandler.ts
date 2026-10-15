@@ -1,11 +1,11 @@
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import type { AetherionClient } from "../client/AetherionClient.js";
+import type { YutaClient } from "../client/YutaClient.js";
 import type { Command } from "../structures/Command.js";
 import { logger } from "../utils/logger.js";
 
-export async function loadCommands(client: AetherionClient): Promise<void> {
+export async function loadCommands(client: YutaClient): Promise<void> {
   const commandsPath = join(process.cwd(), "src", "commands");
   const categories = await readdir(commandsPath);
 

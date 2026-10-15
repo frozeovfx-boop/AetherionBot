@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, code } from "../../utils/embeds.js";
 import { tg } from "../../i18n/index.js";
 
@@ -18,7 +18,7 @@ export default class PingCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const gid = interaction.guildId;
     const sent = await interaction.reply({
       content: tg(gid, "ping.measuring"),

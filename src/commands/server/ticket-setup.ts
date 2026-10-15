@@ -9,7 +9,7 @@ import {
   ChannelType,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line } from "../../utils/embeds.js";
 
 export default class TicketSetupCommand extends Command {
@@ -36,7 +36,7 @@ export default class TicketSetupCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const channel = interaction.options.getChannel("kanal", true) as TextChannel;
 
     const embed = baseEmbed(Theme.primary)
@@ -50,7 +50,7 @@ export default class TicketSetupCommand extends Command {
           line(),
         ].join("\n")
       )
-      .setFooter({ text: "Aetherion Support" });
+      .setFooter({ text: "Yuta Support" });
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()

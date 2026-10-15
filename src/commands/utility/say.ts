@@ -4,7 +4,7 @@ import {
   PermissionFlagsBits,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed } from "../../utils/embeds.js";
 
 export default class SayCommand extends Command {
@@ -25,7 +25,7 @@ export default class SayCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const text = interaction.options.getString("mesaj", true);
     await interaction.reply({ content: "✓", ephemeral: true });
     await interaction.channel?.send({ content: text.slice(0, 2000) });

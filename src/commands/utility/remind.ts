@@ -3,7 +3,7 @@ import {
   ChatInputCommandInteraction,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line, kv } from "../../utils/embeds.js";
 
 function parseDuration(input: string): number | null {
@@ -31,7 +31,7 @@ export default class RemindCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const durationStr = interaction.options.getString("sure", true);
     const message = interaction.options.getString("mesaj", true);
     const ms = parseDuration(durationStr);

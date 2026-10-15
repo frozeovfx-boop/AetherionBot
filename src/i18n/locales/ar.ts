@@ -15,7 +15,7 @@ export const ar: Record<TranslationKey, string> = {
   "ping.latency": "الرسالة",
   "ping.api": "API",
   "ping.uptime": "وقت التشغيل",
-  "help.title": "Aetherion",
+  "help.title": "Yuta",
   "help.tagline": "*نظيف. قوي. بلا حشو.*",
   "help.total": "المجموع {count} أوامر",
   "help.detail": "التفاصيل: `/help فئة:`",

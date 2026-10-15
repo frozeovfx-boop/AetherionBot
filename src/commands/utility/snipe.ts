@@ -3,7 +3,7 @@ import {
   ChatInputCommandInteraction,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line, kv } from "../../utils/embeds.js";
 import { snipeCache } from "../../utils/snipe.js";
 
@@ -19,7 +19,7 @@ export default class SnipeCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.channelId) return;
     const sniped = snipeCache.get(interaction.channelId);
 

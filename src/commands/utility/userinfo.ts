@@ -3,7 +3,7 @@ import {
   ChatInputCommandInteraction,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, code, divider } from "../../utils/embeds.js";
 
 export default class UserinfoCommand extends Command {
@@ -23,7 +23,7 @@ export default class UserinfoCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const user = interaction.options.getUser("kullanici") ?? interaction.user;
     const member = interaction.guild
       ? await interaction.guild.members.fetch(user.id).catch(() => null)

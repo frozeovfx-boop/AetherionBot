@@ -6,7 +6,7 @@ import {
   ButtonStyle,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 export default class GithubCommand extends Command {
@@ -24,13 +24,13 @@ export default class GithubCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const username = interaction.options.getString("kullanici", true);
     await interaction.deferReply();
 
     try {
       const res = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
-        headers: { "User-Agent": "AetherionBot", Accept: "application/vnd.github+json" },
+        headers: { "User-Agent": "YutaBot", Accept: "application/vnd.github+json" },
       });
       if (!res.ok) throw new Error("not found");
       const u = (await res.json()) as {

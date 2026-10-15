@@ -7,7 +7,7 @@ import {
   RESTPostAPIChatInputApplicationCommandsJSONBody,
   RESTPostAPIContextMenuApplicationCommandsJSONBody,
 } from "discord.js";
-import type { AetherionClient } from "../client/AetherionClient.js";
+import type { YutaClient } from "../client/YutaClient.js";
 
 export interface CommandOptions {
   name: string;
@@ -54,7 +54,7 @@ export abstract class Command {
   }
 
   public abstract execute(
-    client: AetherionClient,
+    client: YutaClient,
     interactionOrMessage: ChatInputCommandInteraction | ContextMenuCommandInteraction | Message,
     args?: string[]
   ): Promise<unknown>;

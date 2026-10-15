@@ -4,7 +4,7 @@ import {
   PermissionFlagsBits,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line, code, kv } from "../../utils/embeds.js";
 import { buildModEmbed, sendModLog } from "../../utils/modlog.js";
 
@@ -28,7 +28,7 @@ export default class UnbanCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) return;
 
     const id = interaction.options.getString("id", true);
@@ -72,7 +72,7 @@ export default class UnbanCommand extends Command {
           line(),
         ].join("\n")
       )
-      .setFooter({ text: `Case #${modCase.id} · Sukuna` });
+      .setFooter({ text: `Case #${modCase.id} · Yuta` });
 
     await interaction.reply({ embeds: [embed] });
 

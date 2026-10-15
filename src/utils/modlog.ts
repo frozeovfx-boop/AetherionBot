@@ -5,7 +5,7 @@ import {
   Client,
 } from "discord.js";
 import type { CaseType } from "../types/moderation.js";
-import type { AetherionClient } from "../client/AetherionClient.js";
+import type { YutaClient } from "../client/YutaClient.js";
 import { Theme, baseEmbed, line, code, kv } from "./embeds.js";
 
 const COLORS: Record<CaseType, ColorResolvable> = {
@@ -62,13 +62,13 @@ export function buildModEmbed(data: {
     );
 
   if (data.userAvatar) embed.setThumbnail(data.userAvatar);
-  if (data.caseId) embed.setFooter({ text: `Case #${data.caseId} · Sukuna` });
+  if (data.caseId) embed.setFooter({ text: `Case #${data.caseId} · Yuta` });
   return embed;
 }
 
 /** Send moderation embed to configured modlog channel */
 export async function sendModLog(
-  client: AetherionClient,
+  client: YutaClient,
   guildId: string,
   embed: EmbedBuilder
 ): Promise<void> {

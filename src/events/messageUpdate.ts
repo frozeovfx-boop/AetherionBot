@@ -1,6 +1,6 @@
 import { Events, Message, PartialMessage } from "discord.js";
 import { Event } from "../structures/Event.js";
-import type { AetherionClient } from "../client/AetherionClient.js";
+import type { YutaClient } from "../client/YutaClient.js";
 import { sendGuildLog } from "../utils/guildLog.js";
 import { Theme, baseEmbed, line, kv, code } from "../utils/embeds.js";
 
@@ -10,7 +10,7 @@ export default class MessageUpdateEvent extends Event<typeof Events.MessageUpdat
   }
 
   public async execute(
-    client: AetherionClient,
+    client: YutaClient,
     oldMessage: Message | PartialMessage,
     newMessage: Message | PartialMessage
   ): Promise<void> {

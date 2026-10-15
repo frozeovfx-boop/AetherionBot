@@ -4,7 +4,7 @@ import {
   PermissionFlagsBits,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line, code } from "../../utils/embeds.js";
 
 export default class CasesCommand extends Command {
@@ -25,7 +25,7 @@ export default class CasesCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) return;
 
     const target = interaction.options.getUser("kullanici", true);
@@ -52,7 +52,7 @@ export default class CasesCommand extends Command {
       .setTitle(`Geçmiş · ${target.username}`)
       .setThumbnail(target.displayAvatarURL({ size: 256 }))
       .setDescription([line(), list, line()].join("\n"))
-      .setFooter({ text: `${cases.length} kayıt · Sukuna` });
+      .setFooter({ text: `${cases.length} kayıt · Yuta` });
 
     await interaction.reply({ embeds: [embed] });
   }

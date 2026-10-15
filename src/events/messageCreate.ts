@@ -1,6 +1,6 @@
 import { Events, Message, Collection } from "discord.js";
 import { Event } from "../structures/Event.js";
-import type { AetherionClient } from "../client/AetherionClient.js";
+import type { YutaClient } from "../client/YutaClient.js";
 import { afkMap } from "../commands/utility/afk.js";
 import { PrefixInteraction, optionNamesFromData } from "../utils/PrefixInteraction.js";
 import { Theme, baseEmbed, line } from "../utils/embeds.js";
@@ -13,11 +13,30 @@ export default class MessageCreateEvent extends Event<typeof Events.MessageCreat
     super(Events.MessageCreate);
   }
 
-  public async execute(client: AetherionClient, message: Message): Promise<void> {
+  public async execute(client: YutaClient, message: Message): Promise<void> {
     if (message.author.bot || !message.guild) return;
 
     // Seen tracker
     client.seen.touch(message.author.id);
+
+    // Text stats + message XP (1/min cooldown)
+    client.stats.addMessage(message.guild.id, message.author.id);
+    if (client.stats.canGrantMessageXp(message.guild.id, message.author.id)) {
+      const { leveledUp, profile } = client.economy.addXp(message.guild.id, message.author.id, 15);
+      if (leveledUp && message.channel.isTextBased()) {
+        message.channel
+          .send({
+            embeds: [
+              baseEmbed(Theme.economy)
+                .setAuthor({ name: "LEVEL UP" })
+                .setDescription(
+                  [line(), `✦ **${message.author.username}** seviye **${profile.level}**`, line()].join("\n")
+                ),
+            ],
+          })
+          .catch(() => null);
+      }
+    }
 
     // AFK
     if (afkMap.has(message.author.id)) {

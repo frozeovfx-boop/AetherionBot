@@ -3,7 +3,7 @@ import {
   ChatInputCommandInteraction,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line } from "../../utils/embeds.js";
 
 const ANSWERS = [
@@ -34,7 +34,7 @@ export default class EightBallCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const question = interaction.options.getString("soru", true);
     const answer = ANSWERS[Math.floor(Math.random() * ANSWERS.length)]!;
 

@@ -18,7 +18,7 @@ export const tr = {
   "ping.uptime": "Uptime",
 
   // help
-  "help.title": "Aetherion",
+  "help.title": "Yuta",
   "help.tagline": "*Temiz. Güçlü. Gereksiz süs yok.*",
   "help.total": "Toplam {count} komut",
   "help.detail": "Detay için  `/help kategori:`",

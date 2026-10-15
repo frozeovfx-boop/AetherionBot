@@ -1,5 +1,5 @@
 import type { ClientEvents } from "discord.js";
-import type { AetherionClient } from "../client/AetherionClient.js";
+import type { YutaClient } from "../client/YutaClient.js";
 
 export abstract class Event<K extends keyof ClientEvents = keyof ClientEvents> {
   public readonly name: K;
@@ -10,5 +10,5 @@ export abstract class Event<K extends keyof ClientEvents = keyof ClientEvents> {
     this.once = once;
   }
 
-  public abstract execute(client: AetherionClient, ...args: ClientEvents[K]): Promise<void> | void;
+  public abstract execute(client: YutaClient, ...args: ClientEvents[K]): Promise<void> | void;
 }

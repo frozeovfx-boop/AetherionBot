@@ -3,7 +3,7 @@ import {
   ChatInputCommandInteraction,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 export default class WeatherCommand extends Command {
@@ -21,13 +21,13 @@ export default class WeatherCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const city = interaction.options.getString("sehir", true);
     await interaction.deferReply();
 
     try {
       const url = `https://wttr.in/${encodeURIComponent(city)}?format=j1`;
-      const res = await fetch(url, { headers: { "User-Agent": "AetherionBot" } });
+      const res = await fetch(url, { headers: { "User-Agent": "YutaBot" } });
       if (!res.ok) throw new Error("fetch failed");
       const data = (await res.json()) as {
         current_condition?: Array<{

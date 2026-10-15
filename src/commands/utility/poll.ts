@@ -4,7 +4,7 @@ import {
   PermissionFlagsBits,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line } from "../../utils/embeds.js";
 
 const EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"];
@@ -31,7 +31,7 @@ export default class PollCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const question = interaction.options.getString("soru", true);
     const options = [
       interaction.options.getString("secenek1", true),

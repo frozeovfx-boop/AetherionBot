@@ -1,6 +1,6 @@
 import { Events, GuildMember, PartialGuildMember } from "discord.js";
 import { Event } from "../structures/Event.js";
-import type { AetherionClient } from "../client/AetherionClient.js";
+import type { YutaClient } from "../client/YutaClient.js";
 import { sendGuildLog } from "../utils/guildLog.js";
 import { Theme, baseEmbed, line, kv } from "../utils/embeds.js";
 
@@ -10,7 +10,7 @@ export default class GuildMemberUpdateEvent extends Event<typeof Events.GuildMem
   }
 
   public async execute(
-    client: AetherionClient,
+    client: YutaClient,
     oldMember: GuildMember | PartialGuildMember,
     newMember: GuildMember
   ): Promise<void> {

@@ -3,7 +3,7 @@ import {
   ChatInputCommandInteraction,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line } from "../../utils/embeds.js";
 
 const QUESTIONS = [
@@ -25,7 +25,7 @@ export default class WyrCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const [a, b] = QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)]!;
 
     const embed = baseEmbed(Theme.fun)

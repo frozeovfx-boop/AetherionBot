@@ -4,7 +4,7 @@ import {
   PermissionFlagsBits,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line, code, kv } from "../../utils/embeds.js";
 import { buildModEmbed, sendModLog } from "../../utils/modlog.js";
 
@@ -31,7 +31,7 @@ export default class BanCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) return;
 
     const target = interaction.options.getUser("kullanici", true);
@@ -78,7 +78,7 @@ export default class BanCommand extends Command {
           .filter(Boolean)
           .join("\n")
       )
-      .setFooter({ text: `Case #${modCase.id} · Sukuna` });
+      .setFooter({ text: `Case #${modCase.id} · Yuta` });
 
     await interaction.reply({ embeds: [embed] });
 

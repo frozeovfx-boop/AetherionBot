@@ -3,7 +3,7 @@ import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { Event } from "../structures/Event.js";
-import type { AetherionClient } from "../client/AetherionClient.js";
+import type { YutaClient } from "../client/YutaClient.js";
 import type { Command } from "../structures/Command.js";
 
 const MAX_COMMANDS = 100;
@@ -60,7 +60,7 @@ export default class ReadyEvent extends Event<typeof Events.ClientReady> {
     super(Events.ClientReady, true);
   }
 
-  public async execute(client: AetherionClient): Promise<void> {
+  public async execute(client: YutaClient): Promise<void> {
     client.logger.info(`Logged in as ${client.user?.tag}`);
     client.logger.info(`Serving ${client.guilds.cache.size} guilds · ${client.commands.size} commands`);
 

@@ -12,7 +12,7 @@ import {
 } from "discord.js";
 import { randomBytes } from "node:crypto";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import type { SelfRoleEntry } from "../../database/SelfRoleManager.js";
 import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
@@ -177,7 +177,7 @@ export default class SelfroleCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild || !interaction.channel) return;
     const sub = interaction.options.getSubcommand();
 
@@ -283,7 +283,7 @@ export default class SelfroleCommand extends Command {
           line(),
         ].join("\n")
       )
-      .setFooter({ text: `ID ${panelId} · Sukuna` });
+      .setFooter({ text: `ID ${panelId} · Yuta` });
 
     const components = buildComponents(panelId, mode, parsed.roles);
     const msg = await channel.send({ embeds: [embed], components });

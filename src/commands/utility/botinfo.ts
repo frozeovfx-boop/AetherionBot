@@ -4,7 +4,7 @@ import {
   version as djsVersion,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 export default class BotinfoCommand extends Command {
@@ -18,13 +18,13 @@ export default class BotinfoCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const users = client.guilds.cache.reduce((a, g) => a + g.memberCount, 0);
     const ms = client.uptime ?? 0;
     const uptime = formatUptime(ms);
 
     const embed = baseEmbed(Theme.primary)
-      .setAuthor({ name: "AETHERION", iconURL: client.user?.displayAvatarURL({ size: 64 }) })
+      .setAuthor({ name: "YUTA", iconURL: client.user?.displayAvatarURL({ size: 64 }) })
       .setTitle("Sistem")
       .setThumbnail(client.user?.displayAvatarURL({ size: 256 }) ?? null)
       .setDescription(

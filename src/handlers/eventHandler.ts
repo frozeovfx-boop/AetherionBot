@@ -1,11 +1,11 @@
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import type { AetherionClient } from "../client/AetherionClient.js";
+import type { YutaClient } from "../client/YutaClient.js";
 import type { Event } from "../structures/Event.js";
 import { logger } from "../utils/logger.js";
 
-export async function loadEvents(client: AetherionClient): Promise<void> {
+export async function loadEvents(client: YutaClient): Promise<void> {
   const eventsPath = join(process.cwd(), "src", "events");
   const files = await readdir(eventsPath);
 

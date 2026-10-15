@@ -1,10 +1,10 @@
 import { TextChannel, EmbedBuilder } from "discord.js";
-import type { AetherionClient } from "../client/AetherionClient.js";
+import type { YutaClient } from "../client/YutaClient.js";
 
 export type LogKind = "message" | "member" | "voice" | "mod" | "invite";
 
 export async function sendGuildLog(
-  client: AetherionClient,
+  client: YutaClient,
   guildId: string,
   kind: LogKind,
   embed: EmbedBuilder

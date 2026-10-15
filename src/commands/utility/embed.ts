@@ -4,7 +4,7 @@ import {
   PermissionFlagsBits,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line } from "../../utils/embeds.js";
 
 export default class EmbedCommand extends Command {
@@ -27,7 +27,7 @@ export default class EmbedCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const title = interaction.options.getString("baslik", true);
     const desc = interaction.options.getString("aciklama", true);
     const hex = interaction.options.getString("renk");

@@ -15,7 +15,7 @@ import {
   OverwriteType,
 } from "discord.js";
 import { Event } from "../structures/Event.js";
-import type { AetherionClient } from "../client/AetherionClient.js";
+import type { YutaClient } from "../client/YutaClient.js";
 
 export default class InteractionCreateEvent extends Event<typeof Events.InteractionCreate> {
   constructor() {
@@ -23,7 +23,7 @@ export default class InteractionCreateEvent extends Event<typeof Events.Interact
   }
 
   public async execute(
-    client: AetherionClient,
+    client: YutaClient,
     interaction: ChatInputCommandInteraction | ButtonInteraction | ModalSubmitInteraction | StringSelectMenuInteraction
   ): Promise<void> {
     if (interaction.isButton() && interaction.customId === "ticket_create") {
@@ -101,7 +101,7 @@ export default class InteractionCreateEvent extends Event<typeof Events.Interact
   }
 }
 
-async function handleTicketCreate(client: AetherionClient, interaction: ButtonInteraction): Promise<void> {
+async function handleTicketCreate(client: YutaClient, interaction: ButtonInteraction): Promise<void> {
   if (!interaction.guild || !interaction.member) return;
 
   const existing = interaction.guild.channels.cache.find(
@@ -176,7 +176,7 @@ async function handleTicketClose(interaction: ButtonInteraction): Promise<void> 
   }, 5000);
 }
 
-async function handleConfession(client: AetherionClient, interaction: ModalSubmitInteraction): Promise<void> {
+async function handleConfession(client: YutaClient, interaction: ModalSubmitInteraction): Promise<void> {
   if (!interaction.guild) return;
   const cfg = client.settings.get(interaction.guild.id);
   if (!cfg.confessionChannelId) {
@@ -209,7 +209,7 @@ async function handleConfession(client: AetherionClient, interaction: ModalSubmi
 }
 
 async function handleSelfRoleButton(
-  client: AetherionClient,
+  client: YutaClient,
   interaction: ButtonInteraction
 ): Promise<void> {
   // sr_btn:panelId:roleId
@@ -252,7 +252,7 @@ async function handleSelfRoleButton(
 }
 
 async function handleSelfRoleMenu(
-  client: AetherionClient,
+  client: YutaClient,
   interaction: StringSelectMenuInteraction
 ): Promise<void> {
   // sr_menu:panelId

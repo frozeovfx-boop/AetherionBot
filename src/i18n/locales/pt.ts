@@ -15,7 +15,7 @@ export const pt: Record<TranslationKey, string> = {
   "ping.latency": "Mensagem",
   "ping.api": "API",
   "ping.uptime": "Uptime",
-  "help.title": "Aetherion",
+  "help.title": "Yuta",
   "help.tagline": "*Limpo. Poderoso. Sem excesso.*",
   "help.total": "Total {count} comandos",
   "help.detail": "Detalhes: `/help categoria:`",

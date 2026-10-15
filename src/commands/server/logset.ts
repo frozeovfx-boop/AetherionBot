@@ -6,7 +6,7 @@ import {
   TextChannel,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 export default class LogsetCommand extends Command {
@@ -63,7 +63,7 @@ export default class LogsetCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) return;
     const sub = interaction.options.getSubcommand();
 

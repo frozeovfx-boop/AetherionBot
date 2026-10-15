@@ -3,7 +3,7 @@ import {
   ChatInputCommandInteraction,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line, bar } from "../../utils/embeds.js";
 
 export default class ShipCommand extends Command {
@@ -22,7 +22,7 @@ export default class ShipCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const a = interaction.options.getUser("bir", true);
     const b = interaction.options.getUser("iki") ?? interaction.user;
     const score = Number((BigInt(a.id) + BigInt(b.id)) % 101n);

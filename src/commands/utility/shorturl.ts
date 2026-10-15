@@ -3,7 +3,7 @@ import {
   ChatInputCommandInteraction,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 export default class ShorturlCommand extends Command {
@@ -21,7 +21,7 @@ export default class ShorturlCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const long = interaction.options.getString("url", true);
     if (!/^https?:\/\//i.test(long)) {
       await interaction.reply({

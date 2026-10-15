@@ -4,7 +4,7 @@ import {
   PermissionFlagsBits,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { conseilEmbed, ConseilTheme, line, kv, code } from "../../utils/embeds.js";
 import {
   runDebate,
@@ -21,7 +21,7 @@ import {
   type AIProviderName,
 } from "../../ai/providers.js";
 
-function rolesFromGuild(client: AetherionClient, guildId: string): ConseilRoles {
+function rolesFromGuild(client: YutaClient, guildId: string): ConseilRoles {
   const raw = client.settings.get(guildId).conseilRoles;
   const out: ConseilRoles = {};
   for (const [k, v] of Object.entries(raw)) {
@@ -104,7 +104,7 @@ export default class ConseilCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const sub = interaction.options.getSubcommand();
 
     if (sub === "status") {

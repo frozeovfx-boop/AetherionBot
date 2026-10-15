@@ -7,7 +7,7 @@ import {
   TextChannel,
 } from "discord.js";
 import { Event } from "../structures/Event.js";
-import type { AetherionClient } from "../client/AetherionClient.js";
+import type { YutaClient } from "../client/YutaClient.js";
 import { Theme, baseEmbed, line, kv, code } from "../utils/embeds.js";
 
 /** messageId -> starboard message id (avoid duplicates) */
@@ -19,7 +19,7 @@ export default class MessageReactionAddEvent extends Event<typeof Events.Message
   }
 
   public async execute(
-    client: AetherionClient,
+    client: YutaClient,
     reaction: MessageReaction | PartialMessageReaction,
     user: User | PartialUser
   ): Promise<void> {

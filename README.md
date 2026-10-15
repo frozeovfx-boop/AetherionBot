@@ -1,4 +1,4 @@
-# Sukuna
+# Yuta
 
 Saitama-level Discord platform.
 

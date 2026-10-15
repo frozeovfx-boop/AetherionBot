@@ -20,7 +20,8 @@ async function main() {
     await client.birthdays.init();
     await client.invites.init();
     await client.selfroles.init();
-    logger.info("Stores ready: economy · cases · inventory · guilds · seen · capsules · aura · birthdays");
+    await client.stats.init();
+    logger.info("Stores ready: economy · cases · inventory · guilds · seen · capsules · aura · birthdays · stats");
 
     await loadEvents(client);
     await loadCommands(client);

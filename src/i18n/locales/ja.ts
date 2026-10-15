@@ -15,7 +15,7 @@ export const ja: Record<TranslationKey, string> = {
   "ping.latency": "メッセージ",
   "ping.api": "API",
   "ping.uptime": "稼働時間",
-  "help.title": "Aetherion",
+  "help.title": "Yuta",
   "help.tagline": "*シンプル。強力。無駄なし。*",
   "help.total": "合計 {count} コマンド",
   "help.detail": "詳細: `/help カテゴリ:`",

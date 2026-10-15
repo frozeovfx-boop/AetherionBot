@@ -5,7 +5,7 @@ import {
   TextChannel,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 export default class SlowmodeCommand extends Command {
@@ -29,7 +29,7 @@ export default class SlowmodeCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.channel || !("setRateLimitPerUser" in interaction.channel)) {
       await interaction.reply({
         embeds: [baseEmbed(Theme.warning).setDescription("Bu kanalda slowmode yok.")],

@@ -1,6 +1,6 @@
 import { Events, GuildMember, PartialGuildMember, TextChannel } from "discord.js";
 import { Event } from "../structures/Event.js";
-import type { AetherionClient } from "../client/AetherionClient.js";
+import type { YutaClient } from "../client/YutaClient.js";
 import { Theme, baseEmbed, line } from "../utils/embeds.js";
 
 export default class GuildMemberRemoveEvent extends Event<typeof Events.GuildMemberRemove> {
@@ -9,7 +9,7 @@ export default class GuildMemberRemoveEvent extends Event<typeof Events.GuildMem
   }
 
   public async execute(
-    client: AetherionClient,
+    client: YutaClient,
     member: GuildMember | PartialGuildMember
   ): Promise<void> {
     const cfg = client.settings.get(member.guild.id);

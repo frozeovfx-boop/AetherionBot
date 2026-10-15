@@ -6,7 +6,7 @@ import {
   ChannelType,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line } from "../../utils/embeds.js";
 
 export default class AnnounceCommand extends Command {
@@ -34,7 +34,7 @@ export default class AnnounceCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const text = interaction.options.getString("mesaj", true);
     const channel = (interaction.options.getChannel("kanal") ?? interaction.channel) as TextChannel;
 

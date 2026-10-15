@@ -3,7 +3,7 @@ import {
   ChatInputCommandInteraction,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line, kv } from "../../utils/embeds.js";
 
 export default class TranslateCommand extends Command {
@@ -37,7 +37,7 @@ export default class TranslateCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const text = interaction.options.getString("metin", true);
     const to = interaction.options.getString("dil") ?? "en";
     await interaction.deferReply();

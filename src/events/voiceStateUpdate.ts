@@ -6,7 +6,7 @@ import {
   PermissionFlagsBits,
 } from "discord.js";
 import { Event } from "../structures/Event.js";
-import type { AetherionClient } from "../client/AetherionClient.js";
+import type { YutaClient } from "../client/YutaClient.js";
 import { sendGuildLog } from "../utils/guildLog.js";
 import { Theme, baseEmbed, line, kv } from "../utils/embeds.js";
 
@@ -25,7 +25,7 @@ export default class VoiceStateUpdateEvent extends Event<typeof Events.VoiceStat
   }
 
   public async execute(
-    client: AetherionClient,
+    client: YutaClient,
     oldState: VoiceState,
     newState: VoiceState
   ): Promise<void> {
@@ -68,6 +68,8 @@ export default class VoiceStateUpdateEvent extends Event<typeof Events.VoiceStat
       const minutes = Math.floor(elapsed / 60_000);
       if (minutes < 1) return;
 
+      client.stats.addVoiceMinutes(guild.id, member.id, minutes);
+
       const { leveledUp, profile } = client.economy.addXp(
         guild.id,
         member.id,
@@ -104,7 +106,7 @@ export default class VoiceStateUpdateEvent extends Event<typeof Events.VoiceStat
 }
 
 async function handleTempVoice(
-  client: AetherionClient,
+  client: YutaClient,
   oldState: VoiceState,
   newState: VoiceState
 ): Promise<void> {
@@ -155,7 +157,7 @@ async function handleTempVoice(
 }
 
 async function logVoice(
-  client: AetherionClient,
+  client: YutaClient,
   oldState: VoiceState,
   newState: VoiceState,
   member: NonNullable<VoiceState["member"]>

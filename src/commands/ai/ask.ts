@@ -3,7 +3,7 @@ import {
   ChatInputCommandInteraction,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 import { askAI, hasAnyProvider, activeProviderLabel } from "../../ai/providers.js";
 
@@ -24,7 +24,7 @@ export default class AskCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const question = interaction.options.getString("soru", true);
 
     if (!hasAnyProvider()) {
@@ -70,7 +70,7 @@ export default class AskCommand extends Command {
             line(),
           ].join("\n")
         )
-        .setFooter({ text: `${activeProviderLabel()} · Sukuna` });
+        .setFooter({ text: `${activeProviderLabel()} · Yuta` });
 
       await interaction.editReply({ embeds: [embed] });
     } catch (err) {

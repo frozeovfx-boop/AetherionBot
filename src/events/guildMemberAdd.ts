@@ -1,6 +1,6 @@
 import { Events, GuildMember, TextChannel, Collection } from "discord.js";
 import { Event } from "../structures/Event.js";
-import type { AetherionClient } from "../client/AetherionClient.js";
+import type { YutaClient } from "../client/YutaClient.js";
 import { Theme, baseEmbed, line, kv, code } from "../utils/embeds.js";
 
 export default class GuildMemberAddEvent extends Event<typeof Events.GuildMemberAdd> {
@@ -8,14 +8,14 @@ export default class GuildMemberAddEvent extends Event<typeof Events.GuildMember
     super(Events.GuildMemberAdd);
   }
 
-  public async execute(client: AetherionClient, member: GuildMember): Promise<void> {
+  public async execute(client: YutaClient, member: GuildMember): Promise<void> {
     const cfg = client.settings.get(member.guild.id);
 
     // Autorole
     if (cfg.autoroleIds.length > 0) {
       const roles = cfg.autoroleIds.filter((id) => member.guild.roles.cache.has(id));
       if (roles.length > 0) {
-        await member.roles.add(roles, "Sukuna autorole").catch((err) => {
+        await member.roles.add(roles, "Yuta autorole").catch((err) => {
           client.logger.error(err, "autorole failed");
         });
       }
@@ -106,7 +106,7 @@ export default class GuildMemberAddEvent extends Event<typeof Events.GuildMember
         .setTitle("Hoş Geldin")
         .setThumbnail(member.user.displayAvatarURL({ size: 256 }))
         .setDescription([line(), text, line()].join("\n"))
-        .setFooter({ text: `Üye #${member.guild.memberCount} · Sukuna` });
+        .setFooter({ text: `Üye #${member.guild.memberCount} · Yuta` });
 
       await (channel as TextChannel).send({ embeds: [embed] });
     } catch (err) {

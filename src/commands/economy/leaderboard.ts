@@ -3,7 +3,7 @@ import {
   ChatInputCommandInteraction,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
-import type { AetherionClient } from "../../client/AetherionClient.js";
+import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line, code } from "../../utils/embeds.js";
 
 export default class LeaderboardCommand extends Command {
@@ -18,7 +18,7 @@ export default class LeaderboardCommand extends Command {
     });
   }
 
-  public async execute(client: AetherionClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) return;
 
     const top = client.economy.getLeaderboard(interaction.guild.id, 10);
@@ -45,7 +45,7 @@ export default class LeaderboardCommand extends Command {
       .setAuthor({ name: "ECONOMY" })
       .setTitle("Sıralama")
       .setDescription([line(), lines.join("\n\n"), line()].join("\n"))
-      .setFooter({ text: `${interaction.guild.name} · Sukuna` });
+      .setFooter({ text: `${interaction.guild.name} · Yuta` });
 
     await interaction.reply({ embeds: [embed] });
   }
