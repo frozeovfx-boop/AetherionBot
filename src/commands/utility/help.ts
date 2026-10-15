@@ -55,7 +55,7 @@ function homeEmbed(client: YutaClient): EmbedBuilder {
         "Menüden kategori seç.",
       ].join("\n")
     )
-    .setFooter({ text: "Yuta · Professional · Clean" });
+    .setFooter({ text: "Yuta" });
 }
 
 function categoryEmbed(client: YutaClient, categoryId: string): EmbedBuilder {

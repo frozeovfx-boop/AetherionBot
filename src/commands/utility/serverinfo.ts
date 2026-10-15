@@ -5,7 +5,7 @@ import {
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { YutaClient } from "../../client/YutaClient.js";
-import { Theme, baseEmbed, code, divider } from "../../utils/embeds.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 export default class ServerinfoCommand extends Command {
   constructor() {
@@ -22,30 +22,31 @@ export default class ServerinfoCommand extends Command {
     });
   }
 
-  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
-    const g = interaction.guild!;
-    const owner = await g.fetchOwner().catch(() => null);
+  public async execute(_client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
+    const g = interaction.guild;
+    if (!g) return;
+
     const text = g.channels.cache.filter((c) => c.type === ChannelType.GuildText).size;
     const voice = g.channels.cache.filter((c) => c.type === ChannelType.GuildVoice).size;
+    const boost = g.premiumSubscriptionCount ?? 0;
 
     const embed = baseEmbed(Theme.primary)
-      .setTitle(`◈  ${g.name}`)
-      .setThumbnail(g.iconURL({ size: 256 }) ?? null)
+      .setAuthor({ name: "SERVER", iconURL: g.iconURL({ size: 64 }) ?? undefined })
+      .setTitle(g.name)
+      .setThumbnail(g.iconURL({ size: 256 }))
       .setDescription(
         [
-          divider(),
-          `**ID**          ${code(g.id)}`,
-          `**Sahip**       ${owner?.user.tag ?? "—"}`,
-          `**Oluşturulma** <t:${Math.floor(g.createdTimestamp / 1000)}:R>`,
-          divider(),
-          `**Üyeler**      ${code(g.memberCount.toLocaleString())}`,
-          `**Roller**      ${code(g.roles.cache.size)}`,
-          `**Kanallar**    ${code(text)} metin · ${code(voice)} ses`,
-          `**Boost**       ${code(`Seviye ${g.premiumTier}`)} · ${code(g.premiumSubscriptionCount ?? 0)} boost`,
-          divider(),
+          line(),
+          kv("ID", code(g.id)),
+          kv("Sahip", `<@${g.ownerId}>`),
+          kv("Üye", code(g.memberCount)),
+          kv("Kanal", code(`${text} metin · ${voice} ses`)),
+          kv("Rol", code(g.roles.cache.size)),
+          kv("Boost", code(boost)),
+          kv("Oluşturulma", `<t:${Math.floor(g.createdTimestamp / 1000)}:D>`),
+          line(),
         ].join("\n")
-      )
-      .setImage(g.bannerURL({ size: 1024 }) ?? null);
+      );
 
     await interaction.reply({ embeds: [embed] });
   }

@@ -1,46 +1,36 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { YutaClient } from "../../client/YutaClient.js";
-import { Theme, baseEmbed, code } from "../../utils/embeds.js";
-import { tg } from "../../i18n/index.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 export default class PingCommand extends Command {
   constructor() {
     super({
       name: "ping",
-      description: "Bot gecikmesini gösterir / Bot latency",
+      description: "Bot gecikmesi",
       category: "utility",
       cooldown: 3,
       data: new SlashCommandBuilder()
         .setName("ping")
-        .setDescription("Bot latency / Gecikme")
+        .setDescription("Bot gecikmesi")
         .toJSON(),
     });
   }
 
   public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
-    const gid = interaction.guildId;
-    const sent = await interaction.reply({
-      content: tg(gid, "ping.measuring"),
-      fetchReply: true,
-    });
+    const sent = await interaction.reply({ content: "…", fetchReply: true });
     const latency = sent.createdTimestamp - interaction.createdTimestamp;
     const api = Math.round(client.ws.ping);
 
-    const bar = (ms: number) => {
-      if (ms < 80) return "█████";
-      if (ms < 150) return "████░";
-      if (ms < 250) return "███░░";
-      return "██░░░";
-    };
-
     const embed = baseEmbed(Theme.primary)
-      .setTitle(tg(gid, "ping.title"))
+      .setAuthor({ name: "PING" })
       .setDescription(
         [
-          `**${tg(gid, "ping.latency")}**  ${code(`${latency}ms`)}  \`${bar(latency)}\``,
-          `**${tg(gid, "ping.api")}**    ${code(`${api}ms`)}  \`${bar(api)}\``,
-          `**${tg(gid, "ping.uptime")}** ${code(formatUptime(client.uptime ?? 0))}`,
+          line(),
+          kv("Gecikme", code(`${latency}ms`)),
+          kv("API", code(`${api}ms`)),
+          kv("Uptime", code(formatUptime(client.uptime ?? 0))),
+          line(),
         ].join("\n")
       );
 
@@ -53,7 +43,7 @@ function formatUptime(ms: number): string {
   const m = Math.floor(ms / 60000) % 60;
   const h = Math.floor(ms / 3600000) % 24;
   const d = Math.floor(ms / 86400000);
-  if (d) return `${d}d ${h}h`;
-  if (h) return `${h}h ${m}m`;
-  return `${m}m ${s}s`;
+  if (d) return `${d}g ${h}s`;
+  if (h) return `${h}s ${m}d`;
+  return `${m}d ${s}sn`;
 }

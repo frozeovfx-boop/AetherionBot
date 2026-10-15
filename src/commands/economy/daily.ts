@@ -4,59 +4,59 @@ import {
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { YutaClient } from "../../client/YutaClient.js";
-import { Theme, baseEmbed, code, divider } from "../../utils/embeds.js";
-import { tg } from "../../i18n/index.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
-const COOLDOWN = 24 * 60 * 60 * 1000;
+const COOLDOWN = 86_400_000;
 const REWARD = 500;
 
 export default class DailyCommand extends Command {
   constructor() {
     super({
       name: "daily",
-      description: "Günlük ödül / Daily reward",
+      description: "Günlük ödül",
       category: "economy",
-      cooldown: 3,
+      cooldown: 5,
       guildOnly: true,
       data: new SlashCommandBuilder()
         .setName("daily")
-        .setDescription("Daily reward")
+        .setDescription("Günlük ödül")
         .toJSON(),
     });
   }
 
   public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) return;
-    const gid = interaction.guild.id;
-    const profile = client.economy.get(gid, interaction.user.id);
+    const p = client.economy.get(interaction.guild.id, interaction.user.id);
     const now = Date.now();
 
-    if (profile.lastDaily && now - profile.lastDaily < COOLDOWN) {
-      const remaining = COOLDOWN - (now - profile.lastDaily);
-      const hours = Math.floor(remaining / 3_600_000);
-      const mins = Math.floor((remaining % 3_600_000) / 60_000);
-      const embed = baseEmbed(Theme.warning)
-        .setTitle(tg(gid, "eco.daily_title"))
-        .setDescription(tg(gid, "eco.daily_wait", { time: `${hours}h ${mins}m` }));
-      await interaction.reply({ embeds: [embed], ephemeral: true });
+    if (p.lastDaily && now - p.lastDaily < COOLDOWN) {
+      const left = p.lastDaily + COOLDOWN;
+      await interaction.reply({
+        embeds: [
+          baseEmbed(Theme.warning)
+            .setAuthor({ name: "DAILY" })
+            .setDescription(
+              [line(), `Sonraki ödül <t:${Math.floor(left / 1000)}:R>`, line()].join("\n")
+            ),
+        ],
+        ephemeral: true,
+      });
       return;
     }
 
-    profile.lastDaily = now;
-    client.economy.addWallet(gid, interaction.user.id, REWARD);
-    const p = client.economy.get(gid, interaction.user.id);
+    p.lastDaily = now;
+    client.economy.addWallet(interaction.guild.id, interaction.user.id, REWARD);
 
-    const embed = baseEmbed(Theme.economy)
-      .setTitle(tg(gid, "eco.daily_title"))
-      .setDescription(
-        [
-          divider(),
-          tg(gid, "eco.daily_claim", { amount: REWARD.toLocaleString() }),
-          `${tg(gid, "eco.daily_balance")}  ${code(p.wallet.toLocaleString())}`,
-          divider(),
-        ].join("\n")
-      );
-
-    await interaction.reply({ embeds: [embed] });
+    await interaction.reply({
+      embeds: [
+        baseEmbed(Theme.economy)
+          .setAuthor({ name: "DAILY" })
+          .setDescription(
+            [line(), kv("Ödül", code(`+${REWARD}`)), kv("Cüzdan", code(client.economy.get(interaction.guild.id, interaction.user.id).wallet)), line()].join(
+              "\n"
+            )
+          ),
+      ],
+    });
   }
 }

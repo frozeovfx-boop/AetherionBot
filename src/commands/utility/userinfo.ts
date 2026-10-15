@@ -4,7 +4,7 @@ import {
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { YutaClient } from "../../client/YutaClient.js";
-import { Theme, baseEmbed, code, divider } from "../../utils/embeds.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 export default class UserinfoCommand extends Command {
   constructor() {
@@ -16,14 +16,12 @@ export default class UserinfoCommand extends Command {
       data: new SlashCommandBuilder()
         .setName("userinfo")
         .setDescription("Kullanıcı bilgileri")
-        .addUserOption((opt) =>
-          opt.setName("kullanici").setDescription("Hedef").setRequired(false)
-        )
+        .addUserOption((o) => o.setName("kullanici").setDescription("Hedef").setRequired(false))
         .toJSON(),
     });
   }
 
-  public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
+  public async execute(_client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const user = interaction.options.getUser("kullanici") ?? interaction.user;
     const member = interaction.guild
       ? await interaction.guild.members.fetch(user.id).catch(() => null)
@@ -34,23 +32,24 @@ export default class UserinfoCommand extends Command {
         .filter((r) => r.id !== interaction.guild!.id)
         .sort((a, b) => b.position - a.position)
         .map((r) => r.toString())
-        .slice(0, 8)
+        .slice(0, 12)
         .join(" ") || "—";
 
     const embed = baseEmbed(Theme.primary)
-      .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL({ size: 128 }) })
+      .setAuthor({ name: "USER", iconURL: user.displayAvatarURL({ size: 64 }) })
+      .setTitle(user.tag)
       .setThumbnail(user.displayAvatarURL({ size: 256 }))
       .setDescription(
         [
-          divider(),
-          `**ID**           ${code(user.id)}`,
-          `**Hesap**        <t:${Math.floor(user.createdTimestamp / 1000)}:R>`,
+          line(),
+          kv("ID", code(user.id)),
+          kv("Hesap", `<t:${Math.floor(user.createdTimestamp / 1000)}:R>`),
           member
-            ? `**Katılma**      <t:${Math.floor(member.joinedTimestamp! / 1000)}:R>`
+            ? kv("Katılım", `<t:${Math.floor(member.joinedTimestamp! / 1000)}:R>`)
             : null,
-          member?.nickname ? `**Takma ad**     ${code(member.nickname)}` : null,
-          divider(),
-          member ? `**Roller**\n${roles}` : null,
+          member ? kv("Takma ad", member.nickname ?? "—") : null,
+          member ? kv("Roller", roles) : null,
+          line(),
         ]
           .filter(Boolean)
           .join("\n")
