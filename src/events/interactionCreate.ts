@@ -52,6 +52,11 @@ export default class InteractionCreateEvent extends Event<typeof Events.Interact
       return;
     }
 
+    if (interaction.isButton() && interaction.customId === "giveaway_luck") {
+      await handleGiveawayLuck(client, interaction);
+      return;
+    }
+
     if (interaction.isButton() && interaction.customId.startsWith("sr_btn:")) {
       await handleSelfRoleButton(client, interaction);
       return;
@@ -454,5 +459,54 @@ async function handleSelfRoleMenu(
       ephemeral: true,
     });
   }
+}
+
+async function handleGiveawayLuck(
+  client: YutaClient,
+  interaction: ButtonInteraction
+): Promise<void> {
+  if (!interaction.guild) return;
+  const member =
+    interaction.member && "roles" in interaction.member
+      ? (interaction.member as GuildMember)
+      : await interaction.guild.members.fetch(interaction.user.id).catch(() => null);
+
+  const { memberLuckWeight } = await import("../utils/giveawayEnd.js");
+  const { Theme, baseEmbed, line, kv, code } = await import("../utils/embeds.js");
+
+  const weight = memberLuckWeight(client, interaction.guild.id, member);
+  const luck = client.settings.get(interaction.guild.id).giveawayLuck;
+  const owned = member
+    ? Object.entries(luck)
+        .filter(([rid]) => member.roles.cache.has(rid))
+        .map(([rid, w]) => `<@&${rid}> ×${w}`)
+    : [];
+
+  await interaction.reply({
+    embeds: [
+      baseEmbed(Theme.economy)
+        .setAuthor({
+          name: interaction.user.tag,
+          iconURL: interaction.user.displayAvatarURL({ size: 64 }),
+        })
+        .setTitle("Çekiliş şansın")
+        .setDescription(
+          [
+            line(),
+            kv("Çarpan", `**×${weight}**`),
+            weight > 1
+              ? "Bu çekilişte normal üyeye göre daha yüksek şans."
+              : "Varsayılan şans (1×).",
+            line(),
+            owned.length ? `**Şanslı rollerin**\n${owned.join("\n")}` : null,
+            line(),
+          ]
+            .filter(Boolean)
+            .join("\n")
+        )
+        .setFooter({ text: "Yuta" }),
+    ],
+    ephemeral: true,
+  });
 }
 

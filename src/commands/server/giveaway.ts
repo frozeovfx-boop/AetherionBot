@@ -3,6 +3,9 @@ import {
   ChatInputCommandInteraction,
   PermissionFlagsBits,
   TextChannel,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
 } from "discord.js";
 import { randomBytes } from "node:crypto";
 import { Command } from "../../structures/Command.js";
@@ -224,8 +227,8 @@ export default class GiveawayCommand extends Command {
           line(),
           "Katılmak için 🎉 tepkisine tıkla.",
           Object.keys(client.settings.get(interaction.guild.id).giveawayLuck).length
-            ? "Şanslı roller ağırlıklı seçilir · `/sans`"
-            : null,
+            ? "Şanslı roller ağırlıklı seçilir · **Şansım** butonu"
+            : "Şansını görmek için **Şansım** butonuna tıkla.",
         ]
           .filter(Boolean)
           .join("\n")
@@ -239,7 +242,13 @@ export default class GiveawayCommand extends Command {
     });
 
     const channel = interaction.channel as TextChannel;
-    const msg = await channel.send({ embeds: [embed] });
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setCustomId("giveaway_luck")
+        .setLabel("Şansım")
+        .setStyle(ButtonStyle.Secondary)
+    );
+    const msg = await channel.send({ embeds: [embed], components: [row] });
     await msg.react("🎉");
 
     const data = {
