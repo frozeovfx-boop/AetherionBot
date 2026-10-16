@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 import { Event } from "../structures/Event.js";
 import type { YutaClient } from "../client/YutaClient.js";
 import { resumeGiveaways } from "../utils/giveawayEnd.js";
+import { resumeTempbans } from "../utils/tempbanResume.js";
 import type { Command } from "../structures/Command.js";
 
 const MAX_COMMANDS = 100;
@@ -82,6 +83,7 @@ export default class ReadyEvent extends Event<typeof Events.ClientReady> {
     setInterval(updatePresence, 10 * 60_000);
 
     resumeGiveaways(client);
+    resumeTempbans(client);
 
     // Invite cache
     for (const guild of client.guilds.cache.values()) {

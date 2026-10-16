@@ -3,11 +3,13 @@ import { loadCommands } from "./handlers/commandHandler.js";
 import { loadEvents } from "./handlers/eventHandler.js";
 import { logger } from "./utils/logger.js";
 import { bindGuildSettings } from "./i18n/index.js";
+import { initPostgres } from "./database/postgres.js";
 
 async function main() {
   const client = new YutaClient();
 
   try {
+    await initPostgres();
     await client.economy.init();
     await client.cases.init();
     await client.inventory.init();
@@ -22,6 +24,7 @@ async function main() {
     await client.selfroles.init();
     await client.stats.init();
     await client.giveaways.init();
+    await client.tempbans.init();
     logger.info("Stores ready: economy · cases · inventory · guilds · seen · capsules · aura · birthdays · stats");
 
     await loadEvents(client);

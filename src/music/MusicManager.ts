@@ -50,7 +50,15 @@ export class MusicManager {
       logger.warn(
         `Lavalink offline (${config.LAVALINK_HOST}:${config.LAVALINK_PORT}) — queue mode only`
       );
+      setInterval(() => void this.tryReconnect(), 60_000);
     }
+  }
+
+  public async tryReconnect(): Promise<void> {
+    if (this.lavalinkReady || !this.node) return;
+    const ok = await this.node.connect();
+    this.lavalinkReady = ok;
+    if (ok) logger.info("Lavalink reconnected");
   }
 
   public getQueue(guildId: string): GuildQueue | undefined {

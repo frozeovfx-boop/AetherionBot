@@ -20,7 +20,10 @@ export interface ModCase {
   duration?: number | null;
   createdAt: Date;
   active: boolean;
+  notes?: { authorId: string; text: string; at: number }[];
+  expiresAt?: number | null;
 }
+
 
 export interface GuildModConfig {
   guildId: string;

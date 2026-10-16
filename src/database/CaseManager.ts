@@ -97,6 +97,27 @@ export class CaseManager {
     return cleared;
   }
 
+  public setExpires(guildId: string, caseId: number, expiresAt: number): void {
+    const c = this.get(guildId, caseId);
+    if (!c) return;
+    c.expiresAt = expiresAt;
+    this.persist();
+  }
+
+  public addNote(
+    guildId: string,
+    caseId: number,
+    authorId: string,
+    text: string
+  ): boolean {
+    const c = this.get(guildId, caseId);
+    if (!c) return false;
+    if (!c.notes) c.notes = [];
+    c.notes.push({ authorId, text: text.slice(0, 500), at: Date.now() });
+    this.persist();
+    return true;
+  }
+
   public deactivate(guildId: string, caseId: number): boolean {
     const c = this.get(guildId, caseId);
     if (!c) return false;

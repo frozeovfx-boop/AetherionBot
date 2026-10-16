@@ -1,6 +1,7 @@
 import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
+import { pgGet, pgSet, isPostgresEnabled } from "./postgres.js";
 
 /**
  * Atomic, debounced JSON file store.
@@ -9,6 +10,7 @@ import { existsSync } from "node:fs";
  */
 export class JsonStore<T> {
   private filePath: string;
+  private fileName: string;
   private tmpPath: string;
   private writeTimer: ReturnType<typeof setTimeout> | null = null;
   private pending: T | null = null;
@@ -16,12 +18,17 @@ export class JsonStore<T> {
   private readonly debounceMs: number;
 
   constructor(filename: string, debounceMs = 400) {
+    this.fileName = filename;
     this.filePath = join(process.cwd(), "data", filename);
     this.tmpPath = `${this.filePath}.tmp`;
     this.debounceMs = debounceMs;
   }
 
   public async load(fallback: T): Promise<T> {
+    if (isPostgresEnabled()) {
+      const fromPg = await pgGet<T>(this.fileName);
+      if (fromPg != null) return fromPg;
+    }
     try {
       if (!existsSync(this.filePath)) return fallback;
       const raw = await readFile(this.filePath, "utf8");
@@ -53,6 +60,9 @@ export class JsonStore<T> {
         const json = JSON.stringify(data);
         await writeFile(this.tmpPath, json, "utf8");
         await rename(this.tmpPath, this.filePath);
+        if (isPostgresEnabled()) {
+          void pgSet(this.fileName, data);
+        }
       } catch (err) {
         console.error(`[JsonStore] save failed ${this.filePath}:`, err);
       }

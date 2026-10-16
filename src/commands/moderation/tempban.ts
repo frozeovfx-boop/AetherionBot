@@ -6,6 +6,7 @@ import {
 import { Command } from "../../structures/Command.js";
 import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
+import { liftTempban } from "../../utils/tempbanResume.js";
 
 function parseDuration(input: string): number | null {
   const match = input.match(/^(\d+)(m|h|d)$/i);
@@ -29,11 +30,11 @@ export default class TempbanCommand extends Command {
       data: new SlashCommandBuilder()
         .setName("tempban")
         .setDescription("Geçici yasaklama")
-        .addUserOption((o) => o.setName("kullanici").setDescription("Hedef").setRequired(true))
+        .addUserOption((o) => o.setName("kullanici").setRequired(true))
         .addStringOption((o) =>
-          o.setName("sure").setDescription("Süre (30m, 2h, 7d)").setRequired(true)
+          o.setName("sure").setDescription("30m, 2h, 7d").setRequired(true)
         )
-        .addStringOption((o) => o.setName("sebep").setDescription("Sebep").setRequired(false))
+        .addStringOption((o) => o.setName("sebep").setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
         .toJSON(),
     });
@@ -67,6 +68,7 @@ export default class TempbanCommand extends Command {
       return;
     }
 
+    const expiresAt = Date.now() + ms;
     const modCase = client.cases.create({
       guildId: interaction.guild.id,
       userId: target.id,
@@ -75,32 +77,41 @@ export default class TempbanCommand extends Command {
       reason: `Tempban ${durationStr} · ${reason}`,
       duration: ms,
     });
+    client.cases.setExpires(interaction.guild.id, modCase.id, expiresAt);
 
-    const embed = baseEmbed(Theme.mod)
-      .setAuthor({ name: "MODERASYON" })
-      .setTitle("Geçici Yasak")
-      .setThumbnail(target.displayAvatarURL({ size: 256 }))
-      .setDescription(
-        [
-          line(),
-          kv("Kullanıcı", target.tag),
-          kv("ID", code(target.id)),
-          kv("Süre", durationStr),
-          kv("Yetkili", interaction.user.tag),
-          kv("Sebep", reason),
-          line(),
-        ].join("\n")
-      )
-      .setFooter({ text: `Case #${modCase.id} · Yuta` });
+    client.tempbans.add({
+      guildId: interaction.guild.id,
+      userId: target.id,
+      moderatorId: interaction.user.id,
+      reason,
+      expiresAt,
+      caseId: modCase.id,
+    });
+    const key = `${interaction.guild.id}:${target.id}`;
+    client.tempbans.schedule(key, ms, () => {
+      void liftTempban(client, interaction.guild!.id, target.id);
+    });
 
-    await interaction.reply({ embeds: [embed] });
-
-    setTimeout(async () => {
-      try {
-        await interaction.guild!.members.unban(target.id, "Tempban süresi doldu");
-      } catch {
-        /* already unbanned */
-      }
-    }, ms);
+    await interaction.reply({
+      embeds: [
+        baseEmbed(Theme.mod)
+          .setAuthor({ name: "MODERASYON" })
+          .setTitle("Geçici Yasak")
+          .setThumbnail(target.displayAvatarURL({ size: 256 }))
+          .setDescription(
+            [
+              line(),
+              kv("Kullanıcı", target.tag),
+              kv("ID", code(target.id)),
+              kv("Süre", durationStr),
+              kv("Bitiş", `<t:${Math.floor(expiresAt / 1000)}:R>`),
+              kv("Yetkili", interaction.user.tag),
+              kv("Sebep", reason),
+              line(),
+            ].join("\n")
+          )
+          .setFooter({ text: `Case #${modCase.id} · Yuta` }),
+      ],
+    });
   }
 }
