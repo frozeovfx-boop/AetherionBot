@@ -13,11 +13,15 @@ lavalink:
       vimeo: true
       http: true
       local: false
-    bufferDurationMs: 400
-    youtubePlaylistLoadLimit: 6
+    # Higher buffer = fewer underruns on weak hosts (latency tradeoff)
+    bufferDurationMs: 700
+    frameBufferDurationMs: 5000
+    youtubePlaylistLoadLimit: 20
     playerUpdateInterval: 5
     youtubeSearchEnabled: true
     soundcloudSearchEnabled: true
+    # Opus quality path is fixed by Discord; keep node healthy
+    trackStuckThresholdMs: 10000
 
 metrics:
   prometheus:

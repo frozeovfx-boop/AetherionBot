@@ -34,6 +34,7 @@ export default class MusicstatusCommand extends Command {
           kv("Lavalink", ready ? "● Online" : "○ Offline"),
           kv("Host", code(`${host}:${port}`)),
           kv("Kuyruklar", code(client.music.queues.size)),
+          kv("Filtreler", code("bass · soft · nightcore · vaporwave · 8d · karaoke · tremolo")),
           line(),
           ready
             ? "Arama ve metadata aktif. Ses stream için node + voice session gerekir."

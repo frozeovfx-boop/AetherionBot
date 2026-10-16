@@ -93,4 +93,34 @@ export class LavalinkNode extends EventEmitter {
   public isReady(): boolean {
     return this.connected;
   }
+
+  /**
+   * Apply filters to a guild player (Lavalink v4).
+   * Requires an active player sessionId bound to the guild — without
+   * @discordjs/voice + WS player this is a no-op until session is wired.
+   */
+  public async applyFilters(
+    guildId: string,
+    filters: Record<string, unknown>
+  ): Promise<boolean> {
+    if (!this.connected || !this.sessionId) return false;
+    try {
+      const res = await fetch(
+        `${this.baseUrl}/v4/sessions/${this.sessionId}/players/${guildId}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: this.password,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ filters }),
+          signal: AbortSignal.timeout(5000),
+        }
+      );
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
 }
+

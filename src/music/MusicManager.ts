@@ -1,5 +1,6 @@
 import { Collection } from "discord.js";
 import { LavalinkNode, type LavalinkTrack } from "./LavalinkNode.js";
+import { FILTERS, type FilterPreset } from "./filters.js";
 import { config } from "../config/index.js";
 import { logger } from "../utils/logger.js";
 
@@ -23,7 +24,9 @@ export interface GuildQueue {
   playing: boolean;
   volume: number;
   loop: "off" | "track" | "queue";
+  filter: import("./filters.js").FilterPreset;
 }
+
 
 /**
  * Queue manager + optional Lavalink search.
@@ -81,6 +84,7 @@ export class MusicManager {
         playing: false,
         volume: 100,
         loop: "off",
+        filter: "off",
       };
       this.queues.set(guildId, queue);
     }
@@ -156,6 +160,15 @@ export class MusicManager {
   public destroy(guildId: string): void {
     this.stop(guildId);
     this.queues.delete(guildId);
+  }
+
+  public setFilter(guildId: string, preset: FilterPreset): FilterPreset | null {
+    const queue = this.queues.get(guildId);
+    if (!queue) return null;
+    queue.filter = preset;
+    // When full player session exists, node applies payload:
+    void this.node?.applyFilters?.(guildId, FILTERS[preset].payload);
+    return preset;
   }
 
   public formatDuration(ms: number): string {
