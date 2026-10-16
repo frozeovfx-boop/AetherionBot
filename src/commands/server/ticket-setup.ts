@@ -106,6 +106,23 @@ export default class TicketSetupCommand extends Command {
                 .setDescription("Ticket açılınca gösterilecek kısa not")
                 .setRequired(false)
             )
+            .addRoleOption((o) =>
+              o
+                .setName("destek")
+                .setDescription("Bu türe özel destek rolü")
+                .setRequired(false)
+            )
+        )
+        .addSubcommand((s) =>
+          s
+            .setName("buton-rol")
+            .setDescription("Mevcut butona destek rolü bağla")
+            .addStringOption((o) =>
+              o.setName("id").setDescription("Buton ID").setRequired(true)
+            )
+            .addRoleOption((o) =>
+              o.setName("destek").setDescription("Rol (boş = kaldır)").setRequired(false)
+            )
         )
         .addSubcommand((s) =>
           s
@@ -146,6 +163,7 @@ export default class TicketSetupCommand extends Command {
       const label = interaction.options.getString("yazi", true).slice(0, 80);
       const style = interaction.options.getString("renk", true) as TicketButton["style"];
       const description = interaction.options.getString("aciklama")?.slice(0, 200);
+      const destek = interaction.options.getRole("destek");
       const buttons = [...client.settings.get(gid).ticketButtons];
       if (buttons.length >= 5) {
         await interaction.reply({
@@ -154,20 +172,40 @@ export default class TicketSetupCommand extends Command {
         });
         return;
       }
-      const id = label
-        .toLowerCase()
-        .replace(/[^a-z0-9ğüşıöç]/gi, "")
-        .slice(0, 12) || randomBytes(2).toString("hex");
+      let id =
+        label
+          .toLowerCase()
+          .replace(/[^a-z0-9ğüşıöç]/gi, "")
+          .slice(0, 12) || randomBytes(2).toString("hex");
       if (buttons.some((b) => b.id === id)) {
-        buttons.push({
-          id: `${id}-${randomBytes(1).toString("hex")}`,
-          label,
-          style,
-          description: description ?? undefined,
-        });
-      } else {
-        buttons.push({ id, label, style, description: description ?? undefined });
+        id = `${id}-${randomBytes(1).toString("hex")}`;
       }
+      buttons.push({
+        id,
+        label,
+        style,
+        description: description ?? undefined,
+        supportRoleId: destek?.id,
+      });
+      client.settings.setTicketButtons(gid, buttons);
+    }
+
+    if (sub === "buton-rol") {
+      const id = interaction.options.getString("id", true);
+      const destek = interaction.options.getRole("destek");
+      const buttons = [...client.settings.get(gid).ticketButtons];
+      const idx = buttons.findIndex((b) => b.id === id);
+      if (idx < 0) {
+        await interaction.reply({
+          embeds: [baseEmbed(Theme.warning).setDescription("Buton bulunamadı. `/ticket-setup buton-liste`")],
+          ephemeral: true,
+        });
+        return;
+      }
+      const b = { ...buttons[idx]! };
+      if (destek) b.supportRoleId = destek.id;
+      else delete b.supportRoleId;
+      buttons[idx] = b;
       client.settings.setTicketButtons(gid, buttons);
     }
 
@@ -195,8 +233,8 @@ export default class TicketSetupCommand extends Command {
       const rows = buttons.map(
         (b) =>
           `${code(b.id)} · **${b.label}** · ${styleLabel(b.style)}${
-            b.description ? ` — ${b.description}` : ""
-          }`
+            b.supportRoleId ? ` · <@&${b.supportRoleId}>` : ""
+          }${b.description ? ` — ${b.description}` : ""}`
       );
       await interaction.reply({
         embeds: [

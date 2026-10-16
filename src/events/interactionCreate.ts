@@ -171,9 +171,11 @@ async function handleTicketCreate(client: YutaClient, interaction: ButtonInterac
     },
   ];
 
-  if (cfg.ticketSupportRoleId) {
+  const typeRole =
+    ("supportRoleId" in btnMeta && btnMeta.supportRoleId) || cfg.ticketSupportRoleId || null;
+  if (typeRole) {
     overwrites.push({
-      id: cfg.ticketSupportRoleId,
+      id: typeRole,
       allow: [
         PermissionFlagsBits.ViewChannel,
         PermissionFlagsBits.SendMessages,
@@ -225,8 +227,10 @@ async function handleTicketCreate(client: YutaClient, interaction: ButtonInterac
       .setStyle(ButtonStyle.Danger)
   );
 
-  const ping = cfg.ticketSupportRoleId
-    ? `${interaction.user} · <@&${cfg.ticketSupportRoleId}>`
+  const pingRole =
+    ("supportRoleId" in btnMeta && btnMeta.supportRoleId) || cfg.ticketSupportRoleId || null;
+  const ping = pingRole
+    ? `${interaction.user} · <@&${pingRole}>`
     : `${interaction.user}`;
 
   await channel.send({ content: ping, embeds: [embed], components: [row] });

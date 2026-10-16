@@ -7,6 +7,8 @@ export interface TicketButton {
   label: string;
   style: "Primary" | "Secondary" | "Success" | "Danger";
   description?: string;
+  /** Optional staff role for this ticket type */
+  supportRoleId?: string;
 }
 
 export interface GuildConfig {
