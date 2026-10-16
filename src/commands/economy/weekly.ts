@@ -30,7 +30,7 @@ export default class WeeklyCommand extends Command {
     if (map.get(key) && now - map.get(key)! < CD) {
       const days = Math.ceil((CD - (now - map.get(key)!)) / 86400000);
       await interaction.reply({
-        embeds: [baseEmbed(Theme.warning).setDescription(`**${days} gün** sonra tekrar.`)],
+        embeds: [baseEmbed(Theme.warning).setAuthor({ name: "ECONOMY" }).setDescription([line(), `**${days} gün** sonra tekrar`, line()].join("\n"))],
         ephemeral: true,
       });
       return;

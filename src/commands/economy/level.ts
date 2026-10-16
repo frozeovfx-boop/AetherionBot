@@ -30,7 +30,7 @@ export default class LevelCommand extends Command {
     const needed = p.level * 100;
 
     const embed = baseEmbed(Theme.economy)
-      .setAuthor({ name: user.username, iconURL: user.displayAvatarURL({ size: 64 }) })
+      .setAuthor({ name: "ECONOMY", iconURL: user.displayAvatarURL({ size: 64 }) })
       .setTitle("Seviye")
       .setThumbnail(user.displayAvatarURL({ size: 256 }))
       .setDescription(

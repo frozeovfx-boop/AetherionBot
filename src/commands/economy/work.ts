@@ -36,7 +36,7 @@ export default class WorkCommand extends Command {
     if (p.lastWork && now - p.lastWork < COOLDOWN) {
       const left = Math.ceil((COOLDOWN - (now - p.lastWork)) / 60_000);
       await interaction.reply({
-        embeds: [baseEmbed(Theme.warning).setDescription(`Dinlen. **${left} dk** sonra tekrar.`)],
+        embeds: [baseEmbed(Theme.warning).setAuthor({ name: "ECONOMY" }).setDescription([line(), `Dinlen · **${left} dk** sonra`, line()].join("\n"))],
         ephemeral: true,
       });
       return;
@@ -49,7 +49,7 @@ export default class WorkCommand extends Command {
     const { leveledUp, profile } = client.economy.addXp(interaction.guild.id, interaction.user.id, 15);
 
     const embed = baseEmbed(Theme.economy)
-      .setAuthor({ name: interaction.user.username, iconURL: interaction.user.displayAvatarURL({ size: 64 }) })
+      .setAuthor({ name: "ECONOMY", iconURL: interaction.user.displayAvatarURL({ size: 64 }) })
       .setTitle("Vardiya")
       .setDescription(
         [
