@@ -5,57 +5,56 @@ import {
 import { Command } from "../../structures/Command.js";
 import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
+import { FILTERS } from "../../music/filters.js";
 
 export default class NowplayingCommand extends Command {
   constructor() {
     super({
       name: "nowplaying",
-      description: "Şu an çalan parçayı gösterir",
+      description: "Çalan parça",
       category: "music",
       cooldown: 3,
       guildOnly: true,
       data: new SlashCommandBuilder()
         .setName("nowplaying")
-        .setDescription("Şu an çalan parçayı gösterir")
+        .setDescription("Çalan parça")
         .toJSON(),
     });
   }
 
   public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) return;
-
     const queue = client.music.getQueue(interaction.guild.id);
     if (!queue?.current) {
       await interaction.reply({
-        embeds: [baseEmbed(Theme.mute).setDescription("Çalan parça yok.")],
+        embeds: [baseEmbed(Theme.mute).setDescription("Şu an bir şey çalmıyor.")],
         ephemeral: true,
       });
       return;
     }
 
     const t = queue.current;
+    const filt = FILTERS[queue.filter];
     const embed = baseEmbed(Theme.music)
-      .setAuthor({ name: "MUSIC" })
-      .setTitle("Şimdi Çalıyor")
+      .setAuthor({ name: "MUSIC · NOW" })
+      .setTitle(t.title)
       .setDescription(
         [
           line(),
-          kv("Parça", t.title),
           t.author ? kv("Sanatçı", t.author) : null,
           kv("Süre", client.music.formatDuration(t.duration)),
-          kv("Durum", queue.playing ? "▶ Çalıyor" : "⏸ Duraklatıldı"),
+          kv("İsteyen", t.requesterTag),
           kv("Ses", code(`${queue.volume}%`)),
           kv("Loop", code(queue.loop)),
-          kv("Lavalink", client.music.lavalinkReady ? "● Online" : "○ Offline"),
+          kv("Filtre", filt.label),
+          kv("Kuyruk", code(queue.tracks.length)),
           line(),
         ]
           .filter(Boolean)
           .join("\n")
-      )
-      .setFooter({ text: t.requesterTag });
+      );
 
     if (t.artworkUrl) embed.setThumbnail(t.artworkUrl);
-
     await interaction.reply({ embeds: [embed] });
   }
 }

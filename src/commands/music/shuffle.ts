@@ -4,63 +4,40 @@ import {
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { YutaClient } from "../../client/YutaClient.js";
-import { Theme, baseEmbed, line, kv } from "../../utils/embeds.js";
+import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 
 export default class ShuffleCommand extends Command {
   constructor() {
     super({
       name: "shuffle",
-      description: "Müzik: Karıştırıldı",
+      description: "Kuyruğu karıştır",
       category: "music",
-      cooldown: 3,
+      cooldown: 5,
       guildOnly: true,
-      data: new SlashCommandBuilder().setName("shuffle").setDescription("Müzik: Karıştırıldı").toJSON(),
+      data: new SlashCommandBuilder()
+        .setName("shuffle")
+        .setDescription("Kuyruğu karıştır")
+        .toJSON(),
     });
   }
 
   public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) return;
-    const queue = client.music.getQueue(interaction.guild.id);
-
-    if (!queue || (!queue.current && queue.tracks.length === 0)) {
+    const n = client.music.shuffle(interaction.guild.id);
+    if (n < 2) {
       await interaction.reply({
-        embeds: [baseEmbed(Theme.mute).setDescription("Kuyruk boş.")],
+        embeds: [baseEmbed(Theme.mute).setDescription("Karıştırmak için en az 2 parça lazım.")],
         ephemeral: true,
       });
       return;
     }
-
-    const action = "shuffle";
-    if (action === "skip") {
-      queue.current = queue.tracks.shift() ?? null;
-      queue.playing = !!queue.current;
-    } else if (action === "stop") {
-      queue.tracks = [];
-      queue.current = null;
-      queue.playing = false;
-    } else if (action === "pause") {
-      queue.playing = false;
-    } else if (action === "resume") {
-      queue.playing = true;
-    } else if (action === "shuffle") {
-      for (let i = queue.tracks.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [queue.tracks[i], queue.tracks[j]] = [queue.tracks[j]!, queue.tracks[i]!];
-      }
-    }
-
-    const embed = baseEmbed(Theme.music)
-      .setAuthor({ name: "MUSIC" })
-      .setTitle("Karıştırıldı")
-      .setDescription(
-        [
-          line(),
-          kv("Şimdi", queue.current?.title ?? "—"),
-          kv("Kuyruk", `**${queue.tracks.length}** parça`),
-          line(),
-        ].join("\n")
-      );
-
-    await interaction.reply({ embeds: [embed] });
+    await interaction.reply({
+      embeds: [
+        baseEmbed(Theme.music)
+          .setAuthor({ name: "MUSIC" })
+          .setTitle("Karıştırıldı")
+          .setDescription([line(), kv("Parça", code(n)), line()].join("\n")),
+      ],
+    });
   }
 }

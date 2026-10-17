@@ -114,6 +114,15 @@ export class MusicManager {
         logger.info(`Playing in ${player.guildId}: ${track.info.title}`);
       });
 
+      this.lavalink.on(
+        "trackEnd",
+        (player: { guildId: string }, _track: unknown, payload: { reason?: string }) => {
+          const reason = payload?.reason ?? "";
+          if (reason === "replaced" || reason === "stopped") return;
+          void this.handleTrackEnd(player.guildId);
+        }
+      );
+
       // Wire voice state / raw packets after client ready
       this.lavalink.init({ ...this.client.user!, id: this.client.user!.id });
 
