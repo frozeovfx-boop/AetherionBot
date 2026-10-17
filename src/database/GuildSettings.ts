@@ -45,7 +45,10 @@ export interface GuildConfig {
   ticketButtons: TicketButton[];
   /** roleId -> weight multiplier (1 = normal, 2 = 2x chance) */
   giveawayLuck: Record<string, number>;
+  /** unix ms; 0 = not premium */
+  premiumUntil: number;
 }
+
 
 
 
@@ -87,6 +90,7 @@ const DEFAULTS: GuildConfig = {
     { id: "destek", label: "Destek", style: "Primary" },
   ],
   giveawayLuck: {},
+  premiumUntil: 0,
 };
 
 
@@ -117,6 +121,7 @@ export class GuildSettings {
             ? cfg.ticketButtons
             : [{ id: "destek", label: "Destek", style: "Primary" }],
         giveawayLuck: cfg.giveawayLuck ?? {},
+        premiumUntil: cfg.premiumUntil ?? 0,
       });
     }
     this.ready = true;
@@ -265,6 +270,16 @@ export class GuildSettings {
 
 
 
+
+
+  public isPremium(guildId: string): boolean {
+    const until = this.get(guildId).premiumUntil;
+    return typeof until === "number" && until > Date.now();
+  }
+
+  public setPremium(guildId: string, untilMs: number): void {
+    this.mutate(guildId, { premiumUntil: untilMs });
+  }
 
   public setGiveawayLuck(guildId: string, roleId: string, weight: number | null): void {
     const luck = { ...this.get(guildId).giveawayLuck };

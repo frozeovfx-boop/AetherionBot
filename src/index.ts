@@ -25,6 +25,7 @@ async function main() {
     await client.stats.init();
     await client.giveaways.init();
     await client.tempbans.init();
+    await client.usage.init();
     logger.info("Stores ready: economy · cases · inventory · guilds · seen · capsules · aura · birthdays · stats");
 
     await loadEvents(client);

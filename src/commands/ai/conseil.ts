@@ -22,6 +22,7 @@ import {
   askAI,
   type AIProviderName,
 } from "../../ai/providers.js";
+import { assertPremiumFeature } from "../../utils/premium.js";
 
 function rolesFromGuild(client: YutaClient, guildId: string): ConseilRoles {
   const raw = client.settings.get(guildId).conseilRoles;
@@ -124,6 +125,12 @@ export default class ConseilCommand extends Command {
     const sub = interaction.options.getSubcommand();
 
     if (sub === "ozet") {
+      const gate = assertPremiumFeature(client, interaction.guildId, "conseil_ozet");
+      if (!gate.ok) {
+        await interaction.reply({ embeds: [gate.embed], ephemeral: true });
+        return;
+      }
+
       if (!interaction.guild) {
         await interaction.reply({ content: "Sadece sunucuda.", ephemeral: true });
         return;
@@ -277,6 +284,12 @@ export default class ConseilCommand extends Command {
     const roles = guildId ? rolesFromGuild(client, guildId) : {};
 
     if (sub === "debate") {
+      const gate = assertPremiumFeature(client, interaction.guildId, "conseil_debate");
+      if (!gate.ok) {
+        await interaction.reply({ embeds: [gate.embed], ephemeral: true });
+        return;
+      }
+
       await interaction.deferReply();
       const konu = interaction.options.getString("konu", true);
       const models = parseModels(interaction.options.getString("modeller"));
@@ -310,6 +323,12 @@ export default class ConseilCommand extends Command {
     }
 
     if (sub === "consult") {
+      const gate = assertPremiumFeature(client, interaction.guildId, "conseil_consult");
+      if (!gate.ok) {
+        await interaction.reply({ embeds: [gate.embed], ephemeral: true });
+        return;
+      }
+
       await interaction.deferReply();
       const soru = interaction.options.getString("soru", true);
 
@@ -350,6 +369,12 @@ export default class ConseilCommand extends Command {
     }
 
     if (sub === "roast") {
+      const gate = assertPremiumFeature(client, interaction.guildId, "conseil_roast");
+      if (!gate.ok) {
+        await interaction.reply({ embeds: [gate.embed], ephemeral: true });
+        return;
+      }
+
       await interaction.deferReply();
       const target = interaction.options.getUser("kullanici", true);
 

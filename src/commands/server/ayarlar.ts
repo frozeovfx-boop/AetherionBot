@@ -49,6 +49,7 @@ export default class AyarlarCommand extends Command {
           line(),
           "**Genel**",
           kv("Prefix", code(c.prefix)),
+          kv("Premium", client.settings.isPremium(interaction.guild.id) ? "**Aktif**" : code("yok")),
           kv("Dil", code(c.locale)),
           line(),
           "**Kanallar**",

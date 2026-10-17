@@ -6,6 +6,7 @@ import { Command } from "../../structures/Command.js";
 import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 import { FILTERS, listFilterChoices, type FilterPreset } from "../../music/filters.js";
+import { assertPremiumFeature } from "../../utils/premium.js";
 
 export default class FilterCommand extends Command {
   constructor() {
@@ -31,6 +32,11 @@ export default class FilterCommand extends Command {
 
   public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) return;
+    const gate = assertPremiumFeature(client, interaction.guild.id, "filter");
+    if (!gate.ok) {
+      await interaction.reply({ embeds: [gate.embed], ephemeral: true });
+      return;
+    }
     const tip = interaction.options.getString("tip", true) as FilterPreset;
     const queue = client.music.getQueue(interaction.guild.id);
 

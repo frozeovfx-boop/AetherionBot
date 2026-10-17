@@ -21,6 +21,7 @@ import { SelfRoleManager } from "../database/SelfRoleManager.js";
 import { StatsManager } from "../database/StatsManager.js";
 import { GiveawayManager } from "../database/GiveawayManager.js";
 import { TempbanManager } from "../database/TempbanManager.js";
+import { UsageManager } from "../database/UsageManager.js";
 
 export class YutaClient extends Client {
   public commands = new Collection<string, Command>();
@@ -41,6 +42,7 @@ export class YutaClient extends Client {
   public readonly stats = new StatsManager();
   public readonly giveaways = new GiveawayManager();
   public readonly tempbans = new TempbanManager();
+  public readonly usage = new UsageManager();
 
   constructor() {
     super({

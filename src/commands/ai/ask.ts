@@ -6,6 +6,7 @@ import { Command } from "../../structures/Command.js";
 import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
 import { askAI, hasAnyProvider, activeProviderLabel } from "../../ai/providers.js";
+import { assertPremiumFeature } from "../../utils/premium.js";
 
 export default class AskCommand extends Command {
   constructor() {
@@ -26,6 +27,12 @@ export default class AskCommand extends Command {
 
   public async execute(client: YutaClient, interaction: ChatInputCommandInteraction): Promise<void> {
     const question = interaction.options.getString("soru", true);
+
+    const gate = assertPremiumFeature(client, interaction.guildId, "ask");
+    if (!gate.ok) {
+      await interaction.reply({ embeds: [gate.embed], ephemeral: true });
+      return;
+    }
 
     if (!hasAnyProvider()) {
       await interaction.reply({
