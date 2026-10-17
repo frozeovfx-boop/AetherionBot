@@ -17,13 +17,13 @@ const CATEGORIES: {
   emoji: string;
   blurb: string;
 }[] = [
-  { id: "moderation", label: "Moderasyon", emoji: "🛡", blurb: "Ban · warn · timeout · lock" },
-  { id: "server", label: "Sunucu", emoji: "⚙", blurb: "Oda · davet · ticket · welcome" },
-  { id: "utility", label: "Utility", emoji: "✦", blurb: "Info · tools · snipe · poll" },
-  { id: "economy", label: "Economy", emoji: "⬡", blurb: "Para · level · shop" },
-  { id: "music", label: "Müzik", emoji: "♪", blurb: "Play · queue · controls" },
-  { id: "fun", label: "Eğlence", emoji: "◈", blurb: "Aura · ship · games" },
-  { id: "ai", label: "AI Conseil", emoji: "◎", blurb: "Debate · consult · ask" },
+  { id: "moderation", label: "Moderasyon", emoji: "🛡️", blurb: "Ban · warn · timeout · lock" },
+  { id: "server", label: "Sunucu", emoji: "⚙️", blurb: "Oda · davet · ticket · welcome" },
+  { id: "utility", label: "Utility", emoji: "🔧", blurb: "Info · tools · snipe · poll" },
+  { id: "economy", label: "Economy", emoji: "💰", blurb: "Para · level · shop" },
+  { id: "music", label: "Müzik", emoji: "🎵", blurb: "Play · queue · controls" },
+  { id: "fun", label: "Eğlence", emoji: "🎮", blurb: "Aura · ship · games" },
+  { id: "ai", label: "AI Conseil", emoji: "🤖", blurb: "Debate · consult · ask" },
   { id: "admin", label: "Admin", emoji: "⚡", blurb: "Owner tools" },
 ];
 
@@ -139,11 +139,11 @@ export default class HelpCommand extends Command {
     const initial =
       direct != null ? categoryEmbed(client, direct) : homeEmbed(client);
 
-    const msg = await interaction.reply({
+    await interaction.reply({
       embeds: [initial],
       components: [row],
-      fetchReply: true,
     });
+    const msg = await interaction.fetchReply();
 
     const collector = msg.createMessageComponentCollector({
       componentType: ComponentType.StringSelect,
