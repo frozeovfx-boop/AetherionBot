@@ -30,32 +30,32 @@ export default class AutomodCommand extends Command {
           s
             .setName("davet")
             .setDescription("Yabancı Discord davet engeli")
-            .addBooleanOption((o) => o.setName("acik").setRequired(true))
+            .addBooleanOption((o) => o.setName("acik").setDescription("Açık/kapalı").setRequired(true))
         )
         .addSubcommand((s) =>
           s
             .setName("link")
             .setDescription("HTTP link engeli")
-            .addBooleanOption((o) => o.setName("acik").setRequired(true))
+            .addBooleanOption((o) => o.setName("acik").setDescription("Açık/kapalı").setRequired(true))
         )
         .addSubcommand((s) =>
           s
             .setName("spam")
             .setDescription("Hızlı mesaj spam engeli")
-            .addBooleanOption((o) => o.setName("acik").setRequired(true))
+            .addBooleanOption((o) => o.setName("acik").setDescription("Açık/kapalı").setRequired(true))
         )
         .addSubcommand((s) =>
           s
             .setName("kufur")
             .setDescription("Yasak kelime filtresi")
-            .addBooleanOption((o) => o.setName("acik").setRequired(true))
+            .addBooleanOption((o) => o.setName("acik").setDescription("Açık/kapalı").setRequired(true))
         )
         .addSubcommand((s) =>
           s
             .setName("mention")
             .setDescription("Max etiket (0=kapalı)")
             .addIntegerOption((o) =>
-              o.setName("limit").setRequired(true).setMinValue(0).setMaxValue(20)
+              o.setName("limit").setDescription("Max mention (0=kapalı)").setRequired(true).setMinValue(0).setMaxValue(20)
             )
         )
         .addSubcommand((s) =>
@@ -64,7 +64,7 @@ export default class AutomodCommand extends Command {
             .setDescription("Yasak kelime ekle/sil")
             .addStringOption((o) =>
               o
-                .setName("islem").setDescription("islem")
+                .setName("islem").setDescription("İşlem")
                 .setRequired(true)
                 .addChoices(
                   { name: "Ekle", value: "ekle" },
@@ -80,7 +80,7 @@ export default class AutomodCommand extends Command {
             .setDescription("Kanal muafiyeti")
             .addStringOption((o) =>
               o
-                .setName("islem").setDescription("islem")
+                .setName("islem").setDescription("İşlem")
                 .setRequired(true)
                 .addChoices(
                   { name: "Ekle", value: "ekle" },
@@ -90,7 +90,7 @@ export default class AutomodCommand extends Command {
             )
             .addChannelOption((o) =>
               o
-                .setName("kanal").setDescription("kanal")
+                .setName("kanal").setDescription("Kanal")
                 .addChannelTypes(ChannelType.GuildText)
                 .setRequired(false)
             )

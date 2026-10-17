@@ -38,9 +38,9 @@ export default class GiveawayCommand extends Command {
           s
             .setName("baslat")
             .setDescription("Çekiliş başlat")
-            .addStringOption((o) => o.setName("odul").setRequired(true).setDescription("Ödül"))
+            .addStringOption((o) => o.setName("odul").setDescription("odul").setRequired(true).setDescription("Ödül"))
             .addStringOption((o) =>
-              o.setName("sure").setRequired(true).setDescription("30m, 2h, 1d")
+              o.setName("sure").setDescription("sure").setRequired(true).setDescription("30m, 2h, 1d")
             )
             .addIntegerOption((o) =>
               o

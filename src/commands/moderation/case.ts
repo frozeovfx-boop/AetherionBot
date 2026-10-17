@@ -24,7 +24,7 @@ export default class CaseCommand extends Command {
             .setName("bak")
             .setDescription("Case detayı")
             .addIntegerOption((o) =>
-              o.setName("id").setRequired(true).setMinValue(1)
+              o.setName("id").setDescription("Case ID").setRequired(true).setMinValue(1)
             )
         )
         .addSubcommand((s) =>
@@ -32,10 +32,10 @@ export default class CaseCommand extends Command {
             .setName("not")
             .setDescription("Case'e not ekle")
             .addIntegerOption((o) =>
-              o.setName("id").setDescription("id").setRequired(true).setMinValue(1)
+              o.setName("id").setDescription("Case ID").setRequired(true).setMinValue(1)
             )
             .addStringOption((o) =>
-              o.setName("metin").setRequired(true).setDescription("Not")
+              o.setName("metin").setDescription("metin").setRequired(true).setDescription("Not")
             )
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
