@@ -1,17 +1,15 @@
 import type { AIProviderName } from "./providers.js";
 import { askProvider, availableProviders, labelOf } from "./providers.js";
 
-/** Core orchestrator system — Hybrid AI personality */
-export const CORE_SYSTEM = `Sen sıradan bir Discord botu değilsin. Sen Grok, Gemini ve GPT güçlerinin birleşimiyle çalışan Hybrid AI Orchestrator’sın (Yuta Conseil).
+/** Yuta Conseil — sharp, short, Discord-native hybrid AI */
+export const CORE_SYSTEM = `Yuta Conseil üyesisin. Discord'da konuşuyorsun.
 
-Kişilik:
-- Robotik cümleler YASAK ("Anlaşıldı", "Size nasıl yardımcı olabilirim?").
-- Samimi, özgüvenli, akıcı, zeki, hafif mizahi. Gen-Z / gamer jargonuna hakim.
-- Saygısız olma ama lafı gediğine oturt.
-- Cevapları Discord için kısa tut (max ~600 karakter per voice). Türkçe yanıt ver kullanıcı Türkçe yazdıysa.
-
-Format:
-- Düz duvar metin yok. Kısa paragraflar, vurucu cümleler.`;
+KURALLAR:
+- Robotik dil yasak: "Anlaşıldı", "Tabii ki yardımcı olayım", "Harika soru!" yok.
+- Samimi, zeki, özgüvenli. Gerekirse iğneleyici ama küfür / nefret yok.
+- Kullanıcı Türkçe yazdıysa Türkçe cevap ver.
+- Bu turda EN FAZLA 450 karakter. Tek fikir, net vuruş. Dolgu yok.
+- Kendini "yapay zeka asistanı" diye tanıtma. Sadece görüşünü söyle.`;
 
 export const VOICE: Record<
   AIProviderName,
@@ -22,28 +20,28 @@ export const VOICE: Record<
     title: "Grok",
     system: `${CORE_SYSTEM}
 
-Sen GROK kafasısın: rahat, esprili, filtreleri zorlayan, internet kültürüne hakim. Direkt konuş, abartılı nezaket yok. Tek ses olarak yanıt ver — diğer modellerden bahsetme.`,
+Rolün GROK: kaos + zeka. İnternet kültürü, sert mizah, doğrudan konuş. Kutsal ineği devir. Diğer modellere isim takma; fikir çarpıştır.`,
   },
   openai: {
     emoji: "⚡",
     title: "GPT",
     system: `${CORE_SYSTEM}
 
-Sen GPT kafasısın: stratejik, keskin mantık, stil sahibi organizatör. Kriz çözen, net argüman. Tek ses olarak yanıt ver — diğer modellerden bahsetme.`,
+Rolün GPT: stratejist. Yapıyı kur, trade-off'u söyle, karar verdir. Soğukkanlı ve keskin. Mizah az, isabet çok.`,
   },
   anthropic: {
     emoji: "🧠",
     title: "Claude",
     system: `${CORE_SYSTEM}
 
-Sen Claude kafasısın: dengeli, derin, etik çerçeveli ama sıkıcı değil. Nüanslı analiz. Tek ses olarak yanıt ver.`,
+Rolün CLAUDE: nüans avcısı. Gizli varsayımları ortaya çıkar, abartıyı budar, etiği hafif tutar ama vaaz verme. Sakin bıçak.`,
   },
   gemini: {
     emoji: "🔮",
     title: "Gemini",
     system: `${CORE_SYSTEM}
 
-Sen GEMINI kafasısın: vizyoner, teknoloji kurdu, devasa veriyi şak diye özetleyen. Derin analiz, gelecek odaklı. Tek ses olarak yanıt ver — diğer modellerden bahsetme.`,
+Rolün GEMINI: sistem düşünürü. Ölçek, gelecek, teknik gerçek. Vizyoner ama somut. "Bir de şu açıdan bak" dedirt.`,
   },
 };
 
@@ -54,85 +52,192 @@ export interface ConseilRoles {
   gemini?: string;
 }
 
+export interface ConseilVoice {
+  provider: AIProviderName;
+  text: string;
+  round: number;
+}
+
 function systemFor(provider: AIProviderName, roles?: ConseilRoles): string {
   const base = VOICE[provider].system;
   const role = roles?.[provider];
   if (!role) return base;
-  return `${base}\n\nBu sunucuda sana verilen ek karakter: "${role}". Bu kişiliği koru.`;
+  return `${base}\n\nSunucu karakterin: "${role}". Bu maskeyi bozma; hâlâ zeki kal.`;
 }
 
+function poolOf(models?: AIProviderName[]): AIProviderName[] {
+  const avail = availableProviders();
+  const pool = (models?.length ? models : avail).filter((p) => avail.includes(p));
+  return [...new Set(pool)].slice(0, 4);
+}
+
+async function speak(
+  provider: AIProviderName,
+  prompt: string,
+  roles?: ConseilRoles
+): Promise<string> {
+  const res = await askProvider(provider, prompt, systemFor(provider, roles));
+  return res.text.slice(0, 500).trim();
+}
+
+/**
+ * 2-round debate:
+ * R1 — independent opening
+ * R2 — each rebuts / builds on the others (real conseil)
+ */
 export async function runDebate(
   topic: string,
   models?: AIProviderName[],
   roles?: ConseilRoles
-): Promise<{ provider: AIProviderName; text: string }[]> {
-  const pool = (models?.length ? models : availableProviders()).filter((p) =>
-    availableProviders().includes(p)
-  );
+): Promise<ConseilVoice[]> {
+  const pool = poolOf(models);
   if (pool.length === 0) throw new Error("NO_PROVIDER");
 
-  const prompt = `Konu / debate konusu: "${topic}"
+  const out: ConseilVoice[] = [];
 
-Bu konuda kendi bakış açınla 2-4 cümlelik güçlü bir argüman yaz. Rakip modellere doğrudan sövme; fikirle çarpış.`;
-
-  const results = await Promise.allSettled(
+  // Round 1 — parallel openings
+  const r1 = await Promise.all(
     pool.map(async (p) => {
-      const r = await askProvider(p, prompt, systemFor(p, roles));
-      return { provider: p, text: r.text.slice(0, 700) };
+      const text = await speak(
+        p,
+        `KONSEY TUR 1 — Açılış konuşması.\nKonu: "${topic}"\n\nTek net tez at. Kanıt veya örnekle vur. Karşı tarafı henüz duyma.`,
+        roles
+      );
+      return { provider: p, text, round: 1 as const };
     })
   );
+  out.push(...r1);
 
-  return results
-    .filter((r): r is PromiseFulfilledResult<{ provider: AIProviderName; text: string }> => r.status === "fulfilled")
-    .map((r) => r.value);
+  if (pool.length === 1) return out;
+
+  // Round 2 — cross-fire
+  const transcript = r1
+    .map((v) => `${VOICE[v.provider].title}: ${v.text}`)
+    .join("\n");
+
+  const r2 = await Promise.all(
+    pool.map(async (p) => {
+      const others = transcript
+        .split("\n")
+        .filter((line) => !line.startsWith(`${VOICE[p].title}:`))
+        .join("\n");
+      const text = await speak(
+        p,
+        `KONSEY TUR 2 — Çapraz ateş.\nKonu: "${topic}"\n\nDiğer sesler:\n${others}\n\nGörevin: En zayıf argümanı çürüt VEYA en iyi fikri çalıp daha iyi hale getir. Tekrar etme. Direkt hitap et.`,
+        roles
+      );
+      return { provider: p, text, round: 2 as const };
+    })
+  );
+  out.push(...r2);
+
+  return out;
 }
 
+/**
+ * Consult: parallel experts → synthesis with explicit dissent.
+ */
 export async function runConsult(
   question: string,
   roles?: ConseilRoles
-): Promise<{ voices: { provider: AIProviderName; text: string }[]; synthesis: string }> {
-  const pool = availableProviders().slice(0, 3);
+): Promise<{ voices: ConseilVoice[]; synthesis: string }> {
+  const pool = poolOf();
   if (pool.length === 0) throw new Error("NO_PROVIDER");
 
-  const voices = await runDebate(question, pool, roles);
-
-  // Synthesis via first available
-  const synthProvider = pool[0]!;
-  const joined = voices.map((v) => `${labelOf(v.provider)}: ${v.text}`).join("\n\n");
-  const synthSystem = `${CORE_SYSTEM}
-
-Görevin: Aşağıdaki farklı AI seslerini tek bir "Süper Cevap"ta sentezle. Tekrar etme, en keskin fikirleri birleştir. 4-8 cümle.`;
-  const synth = await askProvider(
-    synthProvider,
-    `Soru: ${question}\n\nSesler:\n${joined}\n\nSentez:`,
-    synthSystem
+  const voices: ConseilVoice[] = await Promise.all(
+    pool.map(async (p) => {
+      const text = await speak(
+        p,
+        `Danışma oturumu.\nSoru: "${question}"\n\nUzman cevabın: 2-4 cümle. Emin değilsen söyle. Pratik öneri ver.`,
+        roles
+      );
+      return { provider: p, text, round: 1 };
+    })
   );
 
-  return { voices, synthesis: synth.text.slice(0, 1200) };
+  const joined = voices
+    .map((v) => `${VOICE[v.provider].title}: ${v.text}`)
+    .join("\n");
+
+  const synthProvider = pool.includes("openai")
+    ? "openai"
+    : pool.includes("anthropic")
+      ? "anthropic"
+      : pool[0]!;
+
+  const synthesis = await speak(
+    synthProvider,
+    `Sen baş raportörsün. Soru: "${question}"\n\nSesler:\n${joined}\n\nÇıktı formatı (zorunlu):
+1) KARAR — tek cümle net cevap
+2) NEDEN — 1-2 cümle
+3) RİSK / İTİRAZ — en az bir sesin itirazını yaz
+4) SONRAKI ADIM — yapılacak 1 somut şey
+
+Uydurma uzlaşma yok. Gerçekten ayrışıyorsa söyle.`,
+    roles
+  );
+
+  return { voices, synthesis: synthesis.slice(0, 900) };
 }
 
+/**
+ * Roast: context-aware, clever, never cruel about identity.
+ */
 export async function runRoast(
   targetTag: string,
   context: string,
   roles?: ConseilRoles
 ): Promise<string> {
-  const pool = availableProviders();
+  const pool = poolOf();
   if (pool.length === 0) throw new Error("NO_PROVIDER");
   const p = pool.includes("grok") ? "grok" : pool[0]!;
 
-  const system = systemFor(p, roles) +
-    `\n\nGörev: Roast. Tatlı-sert, zeki, aşırı kişisel saldırı / nefret yok. Discord TOS'a uygun. Max 5 cümle.`;
+  const ctx = context.trim()
+    ? `Son mesajlarından örnekler:\n${context.slice(0, 600)}`
+    : "Mesaj bağlamı yok — genel sunucu enerjisine göre zekice takıl.";
 
-  const r = await askProvider(
+  return speak(
     p,
-    `Hedef: ${targetTag}\nBağlam / son mesajlar:\n${context || "(bağlam yok — genel tatlı roast yap)"}\n\nRoast:`,
-    system
+    `ROAST (tatlı-sert).
+Hedef: ${targetTag}
+${ctx}
+
+Kurallar:
+- Max 400 karakter.
+- Zeka ile vur; görünüş / etnik / cinsiyet / travma yok.
+- 2-3 cümle, punchline ile bitir.
+- Yalaka olma, zalim de olma.`,
+    roles
   );
-  return r.text.slice(0, 800);
 }
 
+/**
+ * Staff summary — already used by /conseil ozet via askAI; keep helper for consistency.
+ */
+export function formatDebateEmbedLines(voices: ConseilVoice[]): string {
+  const r1 = voices.filter((v) => v.round === 1);
+  const r2 = voices.filter((v) => v.round === 2);
+
+  const block = (list: ConseilVoice[], title: string) => {
+    if (!list.length) return "";
+    const body = list
+      .map((v) => {
+        const meta = VOICE[v.provider];
+        return `${meta.emoji} **${meta.title}**\n${v.text}`;
+      })
+      .join("\n\n");
+    return `**${title}**\n${body}`;
+  };
+
+  return [block(r1, "TUR 1 · Açılış"), r2.length ? block(r2, "TUR 2 · Çapraz ateş") : ""]
+    .filter(Boolean)
+    .join("\n\n" + "─".repeat(18) + "\n\n");
+}
+
+export { labelOf };
+
 export function parseModels(raw: string | null): AIProviderName[] | undefined {
-  if (!raw) return undefined;
+  if (!raw?.trim()) return undefined;
   const map: Record<string, AIProviderName> = {
     grok: "grok",
     gpt: "openai",

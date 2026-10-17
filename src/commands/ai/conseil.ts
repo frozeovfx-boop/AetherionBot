@@ -12,6 +12,7 @@ import {
   runRoast,
   parseModels,
   VOICE,
+  formatDebateEmbedLines,
   type ConseilRoles,
 } from "../../ai/conseil.js";
 import {
@@ -291,15 +292,10 @@ export default class ConseilCommand extends Command {
           return;
         }
 
-        const body = voices
-          .map((v) => {
-            const meta = VOICE[v.provider];
-            return `${meta.emoji} **${meta.title}**\n${v.text}`;
-          })
-          .join(`\n\n${"─".repeat(24)}\n\n`);
+        const body = formatDebateEmbedLines(voices);
 
         const embed = conseilEmbed(ConseilTheme.cyan)
-          .setAuthor({ name: "AI CONSEIL DEBATE" })
+          .setAuthor({ name: "CONSEIL · DEBATE" })
           .setTitle(konu.slice(0, 200))
           .setDescription([line(), body, line()].join("\n"));
 
@@ -323,21 +319,21 @@ export default class ConseilCommand extends Command {
         const voiceBlock = voices
           .map((v) => {
             const meta = VOICE[v.provider];
-            return `${meta.emoji} **${meta.title}** — ${v.text.slice(0, 280)}`;
+            return `${meta.emoji} **${meta.title}**\n${v.text}`;
           })
           .join("\n\n");
 
         const embed = conseilEmbed(ConseilTheme.purple)
-          .setAuthor({ name: "AI CONSEIL CONSULT" })
+          .setAuthor({ name: "CONSEIL · CONSULT" })
           .setTitle(soru.slice(0, 200))
           .setDescription(
             [
               line(),
               voiceBlock,
               "",
-              "━".repeat(20),
+              "─".repeat(18),
               "",
-              "✦ **SÜPER CEVAP**",
+              "✦ **RAPOR**",
               synthesis,
               line(),
             ].join("\n")
