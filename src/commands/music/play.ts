@@ -91,6 +91,21 @@ export default class PlayCommand extends Command {
 
     if (track.artworkUrl) embed.setThumbnail(track.artworkUrl);
 
+    if (isFirst) {
+      const result = await client.music.play(interaction.guild.id, voice);
+      if (!result.ok) {
+        embed.setDescription(
+          [
+            line(),
+            kv("Parça", track.title),
+            kv("Durum", "Kuyruğa alındı"),
+            kv("Ses", result.reason ?? "Oynatılamadı"),
+            line(),
+          ].join("\n")
+        );
+      }
+    }
+
     await interaction.editReply({ embeds: [embed] });
   }
 }

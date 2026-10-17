@@ -10,15 +10,15 @@ export default class VolumeCommand extends Command {
   constructor() {
     super({
       name: "volume",
-      description: "Ses seviyesi",
+      description: "Ses seviyesi (1-200)",
       category: "music",
       cooldown: 3,
       guildOnly: true,
       data: new SlashCommandBuilder()
         .setName("volume")
-        .setDescription("Ses seviyesi")
+        .setDescription("Ses seviyesi (1-200)")
         .addIntegerOption((o) =>
-          o.setName("seviye").setDescription("0-200").setRequired(true).setMinValue(0).setMaxValue(200)
+          o.setName("seviye").setRequired(true).setMinValue(1).setMaxValue(200)
         )
         .toJSON(),
     });
@@ -34,15 +34,15 @@ export default class VolumeCommand extends Command {
       });
       return;
     }
-
-    const vol = interaction.options.getInteger("seviye", true);
-    queue.volume = vol;
-
-    const embed = baseEmbed(Theme.music)
-      .setAuthor({ name: "MUSIC" })
-      .setTitle("Ses")
-      .setDescription([line(), kv("Seviye", code(`${vol}%`)), line()].join("\n"));
-
-    await interaction.reply({ embeds: [embed] });
+    const seviye = interaction.options.getInteger("seviye", true);
+    await client.music.setVolume(interaction.guild.id, seviye);
+    await interaction.reply({
+      embeds: [
+        baseEmbed(Theme.music)
+          .setAuthor({ name: "MUSIC" })
+          .setTitle("Ses")
+          .setDescription([line(), kv("Seviye", code(`${queue.volume}%`)), line()].join("\n")),
+      ],
+    });
   }
 }

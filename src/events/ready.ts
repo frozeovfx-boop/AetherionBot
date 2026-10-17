@@ -84,6 +84,7 @@ export default class ReadyEvent extends Event<typeof Events.ClientReady> {
 
     resumeGiveaways(client);
     resumeTempbans(client);
+    void client.music.init(client);
 
     // Invite cache
     for (const guild of client.guilds.cache.values()) {
