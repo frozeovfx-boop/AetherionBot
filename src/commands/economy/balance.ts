@@ -17,7 +17,7 @@ export default class BalanceCommand extends Command {
       data: new SlashCommandBuilder()
         .setName("balance")
         .setDescription("Cüzdan ve banka")
-        .addUserOption((o) => o.setName("kullanici").setRequired(false))
+        .addUserOption((o) => o.setName("kullanici").setDescription("Kullanıcı").setRequired(false))
         .toJSON(),
     });
   }

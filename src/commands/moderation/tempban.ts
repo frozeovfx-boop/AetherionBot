@@ -30,11 +30,11 @@ export default class TempbanCommand extends Command {
       data: new SlashCommandBuilder()
         .setName("tempban")
         .setDescription("Geçici yasaklama")
-        .addUserOption((o) => o.setName("kullanici").setRequired(true))
+        .addUserOption((o) => o.setName("kullanici").setDescription("kullanici").setRequired(true))
         .addStringOption((o) =>
           o.setName("sure").setDescription("30m, 2h, 7d").setRequired(true)
         )
-        .addStringOption((o) => o.setName("sebep").setRequired(false))
+        .addStringOption((o) => o.setName("sebep").setDescription("sebep").setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
         .toJSON(),
     });

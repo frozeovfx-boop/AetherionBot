@@ -18,7 +18,7 @@ export default class VolumeCommand extends Command {
         .setName("volume")
         .setDescription("Ses seviyesi (1-200)")
         .addIntegerOption((o) =>
-          o.setName("seviye").setRequired(true).setMinValue(1).setMaxValue(200)
+          o.setName("seviye").setDescription("seviye").setRequired(true).setMinValue(1).setMaxValue(200)
         )
         .toJSON(),
     });

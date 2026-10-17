@@ -64,7 +64,7 @@ export default class AutomodCommand extends Command {
             .setDescription("Yasak kelime ekle/sil")
             .addStringOption((o) =>
               o
-                .setName("islem")
+                .setName("islem").setDescription("islem")
                 .setRequired(true)
                 .addChoices(
                   { name: "Ekle", value: "ekle" },
@@ -80,7 +80,7 @@ export default class AutomodCommand extends Command {
             .setDescription("Kanal muafiyeti")
             .addStringOption((o) =>
               o
-                .setName("islem")
+                .setName("islem").setDescription("islem")
                 .setRequired(true)
                 .addChoices(
                   { name: "Ekle", value: "ekle" },
@@ -90,7 +90,7 @@ export default class AutomodCommand extends Command {
             )
             .addChannelOption((o) =>
               o
-                .setName("kanal")
+                .setName("kanal").setDescription("kanal")
                 .addChannelTypes(ChannelType.GuildText)
                 .setRequired(false)
             )

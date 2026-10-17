@@ -32,7 +32,7 @@ export default class CaseCommand extends Command {
             .setName("not")
             .setDescription("Case'e not ekle")
             .addIntegerOption((o) =>
-              o.setName("id").setRequired(true).setMinValue(1)
+              o.setName("id").setDescription("id").setRequired(true).setMinValue(1)
             )
             .addStringOption((o) =>
               o.setName("metin").setRequired(true).setDescription("Not")

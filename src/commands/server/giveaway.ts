@@ -72,7 +72,7 @@ export default class GiveawayCommand extends Command {
           s
             .setName("sans-rol")
             .setDescription("Şanslı rol ayarla")
-            .addRoleOption((o) => o.setName("rol").setRequired(true))
+            .addRoleOption((o) => o.setName("rol").setDescription("Şanslı rol").setRequired(true))
             .addNumberOption((o) =>
               o
                 .setName("carpan")

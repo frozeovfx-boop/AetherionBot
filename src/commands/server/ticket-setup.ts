@@ -69,14 +69,14 @@ export default class TicketSetupCommand extends Command {
             .setDescription("Kategori / destek rolü / log")
             .addChannelOption((o) =>
               o
-                .setName("kategori")
+                .setName("kategori").setDescription("Kategori")
                 .addChannelTypes(ChannelType.GuildCategory)
                 .setRequired(false)
             )
-            .addRoleOption((o) => o.setName("destek").setRequired(false))
+            .addRoleOption((o) => o.setName("destek").setDescription("Destek rolü").setRequired(false))
             .addChannelOption((o) =>
               o
-                .setName("log")
+                .setName("log").setDescription("Log kanalı")
                 .addChannelTypes(ChannelType.GuildText)
                 .setRequired(false)
             )
