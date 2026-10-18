@@ -12,13 +12,12 @@ const MAX_COMMANDS = 100;
 /** Higher = deployed first when over limit */
 const CATEGORY_PRIORITY: Record<string, number> = {
   moderation: 100,
+  server: 95,
   utility: 90,
-  economy: 80,
-  music: 70,
-  server: 60,
-  fun: 40,
-  ai: 30,
-  admin: 20,
+  ai: 85,
+  economy: 70,
+  music: 60,
+  admin: 50,
 };
 
 async function deploy() {
@@ -69,7 +68,7 @@ async function deploy() {
 
   if (skipped > 0) {
     logger.warn(
-      `Discord limit is ${MAX_COMMANDS} slash commands. Deploying ${selected.length}, skipping ${skipped} (mostly low-priority fun).`
+      `Discord limit is ${MAX_COMMANDS} slash commands. Deploying ${selected.length}, skipping ${skipped} (priority cut).`
     );
   }
 
