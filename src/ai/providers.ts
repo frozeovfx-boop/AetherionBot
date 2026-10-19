@@ -160,24 +160,53 @@ async function askAnthropic(prompt: string, system: string): Promise<AIResult> {
   return { text, provider: "anthropic" };
 }
 
+/** Try models in order — 503/404 → next */
+const GEMINI_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-2.0-flash-001",
+  "gemini-flash-latest",
+  "gemini-3.8-flash",
+  "gemini-2.5-flash-lite",
+] as const;
+
 async function askGemini(prompt: string, system: string): Promise<AIResult> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${config.GOOGLE_API_KEY}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: `${system}\n\nUser: ${prompt}` }] }],
-      generationConfig: { maxOutputTokens: 900, temperature: 0.85 },
-    }),
+  const body = JSON.stringify({
+    contents: [{ parts: [{ text: `${system}\n\nUser: ${prompt}` }] }],
+    generationConfig: { maxOutputTokens: 900, temperature: 0.85 },
   });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`Gemini ${res.status}: ${body.slice(0, 200)}`);
+
+  let lastErr = "Gemini failed";
+  for (const model of GEMINI_MODELS) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.GOOGLE_API_KEY}`;
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
+      if (res.status === 503 || res.status === 429 || res.status === 404) {
+        lastErr = `Gemini ${model} ${res.status}`;
+        continue;
+      }
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => "");
+        lastErr = `Gemini ${res.status}: ${errBody.slice(0, 180)}`;
+        continue;
+      }
+      const data = (await res.json()) as {
+        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+      };
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      if (!text) {
+        lastErr = `Gemini ${model} empty`;
+        continue;
+      }
+      return { text, provider: "gemini" };
+    } catch (e) {
+      lastErr = e instanceof Error ? e.message : String(e);
+    }
   }
-  const data = (await res.json()) as {
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-  };
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-  if (!text) throw new Error("Gemini empty");
-  return { text, provider: "gemini" };
+  throw new Error(
+    `${lastErr} · Google yoğun veya model kapalı. 1–2 dk sonra tekrar dene.`
+  );
 }
