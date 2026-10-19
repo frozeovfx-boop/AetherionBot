@@ -161,7 +161,7 @@ async function askAnthropic(prompt: string, system: string): Promise<AIResult> {
 }
 
 async function askGemini(prompt: string, system: string): Promise<AIResult> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${config.GOOGLE_API_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent?key=${config.GOOGLE_API_KEY}`;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
