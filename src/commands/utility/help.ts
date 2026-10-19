@@ -11,44 +11,55 @@ import {
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { YutaClient } from "../../client/YutaClient.js";
-import { Theme, baseEmbed, line, code } from "../../utils/embeds.js";
+import { Theme, baseEmbed, line } from "../../utils/embeds.js";
 import { FREE_LIMITS, isGuildPremium } from "../../utils/premium.js";
 
 const CATEGORIES: { id: string; label: string; blurb: string }[] = [
-  { id: "moderation", label: "Moderasyon", blurb: "Ban · warn · case" },
-  { id: "server", label: "Sunucu", blurb: "Ticket · log · welcome" },
-  { id: "utility", label: "Araçlar", blurb: "Info · premium" },
-  { id: "economy", label: "Ekonomi", blurb: "Para · level" },
-  { id: "music", label: "Müzik", blurb: "Play · queue" },
-  { id: "ai", label: "AI", blurb: "Ask · conseil" },
-  { id: "admin", label: "Admin", blurb: "Owner" },
+  { id: "moderation", label: "Moderasyon", blurb: "Ban · warn · case · lock" },
+  { id: "server", label: "Sunucu", blurb: "Ticket · log · welcome · ayar" },
+  { id: "utility", label: "Araçlar", blurb: "Info · premium · snipe" },
+  { id: "economy", label: "Ekonomi", blurb: "Para · work · level" },
+  { id: "music", label: "Müzik", blurb: "Play · queue · filter" },
+  { id: "ai", label: "AI / Conseil", blurb: "Ask · debate · consult" },
 ];
 
-const SYSTEMS: { label: string; value: string }[] = [
-  { label: "Ticket", value: "sys:ticket" },
-  { label: "Automod", value: "sys:automod" },
-  { label: "Log", value: "sys:log" },
-  { label: "Self-role", value: "sys:selfrole" },
-  { label: "Çekiliş", value: "sys:giveaway" },
-  { label: "Özel oda", value: "sys:tempvoice" },
-  { label: "Premium", value: "sys:premium" },
-  { label: "Conseil", value: "sys:conseil" },
+const SYSTEMS: { label: string; value: string; cmd: string }[] = [
+  { label: "Çekiliş", value: "sys:giveaway", cmd: "/giveaway" },
+  { label: "Automod", value: "sys:automod", cmd: "/automod" },
+  { label: "Ticket", value: "sys:ticket", cmd: "/ticket-setup" },
+  { label: "Log", value: "sys:log", cmd: "/logset" },
+  { label: "Self-role", value: "sys:selfrole", cmd: "/selfrole" },
+  { label: "Özel oda", value: "sys:tempvoice", cmd: "/ozeloda" },
+  { label: "Welcome", value: "sys:welcome", cmd: "/setwelcome" },
+  { label: "Stat", value: "sys:stat", cmd: "/stat" },
+  { label: "Davet", value: "sys:invite", cmd: "/davet" },
+  { label: "Premium", value: "sys:premium", cmd: "/premium" },
+  { label: "Conseil", value: "sys:conseil", cmd: "/conseil" },
+  { label: "Ayarlar", value: "sys:ayarlar", cmd: "/ayarlar" },
 ];
 
-const SYS_HELP: Record<string, string> = {
-  "sys:ticket": "`/ticket-setup panel` · buton · destek rolü",
-  "sys:automod": "`/automod` davet · link · spam · küfür",
-  "sys:log": "`/logset` mesaj · üye · ses · davet",
-  "sys:selfrole": "`/selfrole panel` buton veya menü",
-  "sys:giveaway": "`/giveaway baslat` · şanslı rol",
-  "sys:tempvoice": "`/ozeloda` hub kanalı",
-  "sys:premium": `\`/premium durum\` · ask ${FREE_LIMITS.ask}/gün · debate ${FREE_LIMITS.conseil_debate}/gün`,
-  "sys:conseil": "`/conseil` debate · consult · ozet",
+const SYS_BODY: Record<string, string> = {
+  "sys:giveaway": "**Çekiliş**\n`/giveaway baslat` · `sans-rol` · Şansım butonu",
+  "sys:automod": "**Automod**\n`/automod` davet · link · spam · küfür",
+  "sys:ticket": "**Ticket**\n`/ticket-setup panel` · buton · destek rolü",
+  "sys:log": "**Log**\n`/logset` mesaj · üye · ses · davet",
+  "sys:selfrole": "**Self-role**\n`/selfrole panel`",
+  "sys:tempvoice": "**Özel oda**\n`/ozeloda` hub",
+  "sys:welcome": "**Welcome**\n`/setwelcome`",
+  "sys:stat": "**Stat**\n`/stat`",
+  "sys:invite": "**Davet**\n`/davet`",
+  "sys:premium": `**Premium**\n\`/premium durum\`\nLimit/gün: ask ${FREE_LIMITS.ask} · debate ${FREE_LIMITS.conseil_debate}`,
+  "sys:conseil": "**Conseil**\n`/conseil` debate · consult · ozet",
+  "sys:ayarlar": "**Ayarlar**\n`/ayarlar` (yetkili)",
 };
+
+function publicCommands(client: YutaClient) {
+  return [...client.commands.values()].filter((c) => c.category !== "admin" && !c.ownerOnly);
+}
 
 function countMap(client: YutaClient): Map<string, number> {
   const m = new Map<string, number>();
-  for (const c of client.commands.values()) {
+  for (const c of publicCommands(client)) {
     m.set(c.category, (m.get(c.category) ?? 0) + 1);
   }
   return m;
@@ -57,46 +68,66 @@ function countMap(client: YutaClient): Map<string, number> {
 function homeEmbed(client: YutaClient, guildId: string | null): EmbedBuilder {
   const counts = countMap(client);
   const prem = guildId ? isGuildPremium(client, guildId) : false;
+  const total = publicCommands(client).length;
 
-  const cats = CATEGORIES.filter((c) => counts.has(c.id))
-    .map((c) => `**${c.label}** \`${counts.get(c.id)}\``)
+  const catBlock = CATEGORIES.filter((c) => counts.has(c.id))
+    .map((c) => {
+      const n = counts.get(c.id) ?? 0;
+      return `\` ${String(n).padStart(2, " ")} \`  **${c.label}**`;
+    })
     .join("\n");
+
+  // two-column-ish systems list
+  const sysLeft: string[] = [];
+  const sysRight: string[] = [];
+  SYSTEMS.forEach((s, i) => {
+    const line = `\`${s.cmd}\``;
+    if (i % 2 === 0) sysLeft.push(line);
+    else sysRight.push(line);
+  });
+  const sysBlock = SYSTEMS.map((s) => `\`${s.cmd}\` **${s.label}**`).join("\n");
 
   return baseEmbed(Theme.primary)
     .setAuthor({
-      name: "Yuta",
-      iconURL: client.user?.displayAvatarURL({ size: 64 }) ?? undefined,
+      name: "Yuta Komutlar",
+      iconURL: client.user?.displayAvatarURL({ size: 128 }) ?? undefined,
     })
     .setDescription(
       [
+        "**Kategoriler**",
+        catBlock,
+        "",
+        "**Sistemler**",
+        sysBlock,
+        "",
         line(),
-        cats,
-        line(),
-        `**${client.commands.size}** komut  ·  ${prem ? "**Premium**" : "Free"}`,
-        line(),
+        `**${total}** komut  ·  ${prem ? "Premium" : "Free"}`,
       ].join("\n")
     );
 }
 
 function categoryEmbed(client: YutaClient, categoryId: string): EmbedBuilder {
   const meta = CATEGORIES.find((c) => c.id === categoryId);
-  const commands = [...client.commands.values()]
+  const commands = publicCommands(client)
     .filter((c) => c.category === categoryId)
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  let list = commands.map((c) => `\`${c.name}\``).join("  ");
-  if (list.length > 3500) list = list.slice(0, 3490) + " …";
+  const list =
+    commands.length === 0
+      ? "—"
+      : commands.map((c) => `\`/${c.name}\`  ${c.description}`).join("\n");
 
   return baseEmbed(Theme.primary)
     .setAuthor({ name: meta?.label ?? categoryId })
-    .setDescription([line(), list || "Boş", line()].join("\n"))
-    .setFooter({ text: `${commands.length} · Yuta` });
+    .setDescription([list.slice(0, 3800)].join("\n"))
+    .setFooter({ text: `${commands.length} komut` });
 }
 
 function systemEmbed(value: string): EmbedBuilder {
+  const title = SYSTEMS.find((s) => s.value === value)?.label ?? "Sistem";
   return baseEmbed(Theme.primary)
-    .setAuthor({ name: SYSTEMS.find((s) => s.value === value)?.label ?? "Sistem" })
-    .setDescription([line(), SYS_HELP[value] ?? "—", line()].join("\n"));
+    .setAuthor({ name: title })
+    .setDescription(SYS_BODY[value] ?? "—");
 }
 
 function buildRows(client: YutaClient): ActionRowBuilder[] {
@@ -104,35 +135,47 @@ function buildRows(client: YutaClient): ActionRowBuilder[] {
 
   const catMenu = new StringSelectMenuBuilder()
     .setCustomId("help_cat")
-    .setPlaceholder("Kategori")
+    .setPlaceholder("Kategoriler")
     .addOptions(
-      new StringSelectMenuOptionBuilder().setLabel("Ana menü").setValue("home"),
+      new StringSelectMenuOptionBuilder()
+        .setLabel("Ana menü")
+        .setDescription("Özet")
+        .setValue("home"),
       ...CATEGORIES.filter((c) => counts.has(c.id)).map((c) =>
         new StringSelectMenuOptionBuilder()
           .setLabel(c.label)
-          .setDescription(c.blurb)
+          .setDescription(`${counts.get(c.id)} komut · ${c.blurb}`.slice(0, 100))
           .setValue(c.id)
       )
     );
 
   const sysMenu = new StringSelectMenuBuilder()
     .setCustomId("help_sys")
-    .setPlaceholder("Sistem")
+    .setPlaceholder("Sistemler")
     .addOptions(
       SYSTEMS.map((s) =>
-        new StringSelectMenuOptionBuilder().setLabel(s.label).setValue(s.value)
+        new StringSelectMenuOptionBuilder()
+          .setLabel(s.label)
+          .setDescription(s.cmd)
+          .setValue(s.value)
       )
     );
 
-  const btns = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder().setCustomId("help_home").setLabel("Ana").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId("help_premium").setLabel("Premium").setStyle(ButtonStyle.Primary)
+  const nav = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId("help_home")
+      .setLabel("Ana menü")
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId("help_premium")
+      .setLabel("Premium")
+      .setStyle(ButtonStyle.Primary)
   );
 
   return [
     new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(catMenu),
     new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(sysMenu),
-    btns,
+    nav,
   ];
 }
 
@@ -167,11 +210,17 @@ export default class HelpCommand extends Command {
       try {
         if (i.isButton()) {
           if (i.customId === "help_home") {
-            await i.update({ embeds: [homeEmbed(client, interaction.guildId)], components: rows });
+            await i.update({
+              embeds: [homeEmbed(client, interaction.guildId)],
+              components: rows,
+            });
             return;
           }
           if (i.customId === "help_premium") {
-            await i.update({ embeds: [systemEmbed("sys:premium")], components: rows });
+            await i.update({
+              embeds: [systemEmbed("sys:premium")],
+              components: rows,
+            });
             return;
           }
         }
@@ -179,7 +228,9 @@ export default class HelpCommand extends Command {
           const v = i.values[0]!;
           if (i.customId === "help_cat") {
             const embed =
-              v === "home" ? homeEmbed(client, interaction.guildId) : categoryEmbed(client, v);
+              v === "home"
+                ? homeEmbed(client, interaction.guildId)
+                : categoryEmbed(client, v);
             await i.update({ embeds: [embed], components: rows });
             return;
           }
