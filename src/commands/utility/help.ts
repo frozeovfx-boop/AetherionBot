@@ -8,6 +8,9 @@ import {
   ButtonStyle,
   ComponentType,
   EmbedBuilder,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { YutaClient } from "../../client/YutaClient.js";
@@ -130,6 +133,30 @@ function systemEmbed(value: string): EmbedBuilder {
     .setDescription(SYS_BODY[value] ?? "—");
 }
 
+
+function searchEmbed(client: YutaClient, query: string): EmbedBuilder {
+  const q = query.trim().toLowerCase();
+  const hits = publicCommands(client)
+    .filter(
+      (c) =>
+        c.name.includes(q) ||
+        c.description.toLowerCase().includes(q) ||
+        c.category.includes(q)
+    )
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .slice(0, 25);
+
+  const body =
+    hits.length === 0
+      ? `**\`${query}\`** için sonuç yok.`
+      : hits.map((c) => `\`/${c.name}\`  ${c.description}`).join("\n");
+
+  return baseEmbed(Theme.primary)
+    .setAuthor({ name: "Arama" })
+    .setDescription([line(), body, line()].join("\n"))
+    .setFooter({ text: `${hits.length} sonuç · ${query.slice(0, 40)}` });
+}
+
 function buildRows(client: YutaClient): ActionRowBuilder[] {
   const counts = countMap(client);
 
@@ -162,6 +189,11 @@ function buildRows(client: YutaClient): ActionRowBuilder[] {
     );
 
   const nav = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId("help_search")
+      .setLabel("Ara")
+      .setEmoji("🔍")
+      .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId("help_home")
       .setLabel("Ana menü")
@@ -209,6 +241,38 @@ export default class HelpCommand extends Command {
     collector.on("collect", async (i) => {
       try {
         if (i.isButton()) {
+          if (i.customId === "help_search") {
+            const modal = new ModalBuilder()
+              .setCustomId("help_search_modal")
+              .setTitle("Komut ara")
+              .addComponents(
+                new ActionRowBuilder<TextInputBuilder>().addComponents(
+                  new TextInputBuilder()
+                    .setCustomId("q")
+                    .setLabel("Komut veya açıklama")
+                    .setStyle(TextInputStyle.Short)
+                    .setPlaceholder("ör: ban, ticket, premium")
+                    .setRequired(true)
+                    .setMaxLength(40)
+                )
+              );
+            await i.showModal(modal);
+            try {
+              const sub = await i.awaitModalSubmit({
+                time: 90_000,
+                filter: (m) =>
+                  m.customId === "help_search_modal" && m.user.id === interaction.user.id,
+              });
+              const q = sub.fields.getTextInputValue("q");
+              await sub.update({
+                embeds: [searchEmbed(client, q)],
+                components: rows,
+              });
+            } catch {
+              /* timeout / cancel */
+            }
+            return;
+          }
           if (i.customId === "help_home") {
             await i.update({
               embeds: [homeEmbed(client, interaction.guildId)],
