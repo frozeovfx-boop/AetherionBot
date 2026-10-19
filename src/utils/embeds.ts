@@ -12,18 +12,18 @@ import {
  */
 export const Theme = {
   /** Hollow Purple — deep cosmic violet */
-  primary: 0x7c3aed as ColorResolvable,
+  primary: 0x8918f5 as ColorResolvable,
   /** Brighter hollow core */
-  hollow: 0xa855f7 as ColorResolvable,
+  hollow: 0x8918f5 as ColorResolvable,
   success: 0x34d399 as ColorResolvable,
   danger: 0xe11d48 as ColorResolvable,
   warning: 0xf59e0b as ColorResolvable,
   info: 0x818cf8 as ColorResolvable,
   mute: 0x64748b as ColorResolvable,
-  economy: 0xc084fc as ColorResolvable,
-  music: 0xd946ef as ColorResolvable,
+  economy: 0x8918f5 as ColorResolvable,
+  music: 0xa855f7 as ColorResolvable,
   mod: 0xe11d48 as ColorResolvable,
-  footer: "Yuta · Hollow",
+  footer: "Yuta",
 } as const;
 
 export function baseEmbed(color: ColorResolvable = Theme.primary): EmbedBuilder {
@@ -96,8 +96,8 @@ export function bar(ratio: number, size = 12): string {
 
 /** Conseil / Hybrid AI visual */
 export const ConseilTheme = {
-  cyan: 0xa855f7 as ColorResolvable,
-  purple: 0x7c3aed as ColorResolvable,
+  cyan: 0x8918f5 as ColorResolvable,
+  purple: 0x8918f5 as ColorResolvable,
   footer: "Yuta · Conseil",
 } as const;
 
