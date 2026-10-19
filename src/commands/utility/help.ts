@@ -109,34 +109,42 @@ function homeEmbed(client: YutaClient, guildId: string | null): EmbedBuilder {
   const counts = countMap(client);
   const prem = guildId ? isGuildPremium(client, guildId) : false;
 
-  const catLines = CATEGORIES.filter((c) => counts.has(c.id)).map((c) => {
-    const n = counts.get(c.id) ?? 0;
-    return `\`${String(n).padStart(2, " ")}\`  **${c.label}**`;
-  });
-
-  const sysLines = SYSTEMS.map((s) => `· **${s.label}** — \`${s.hint}\``).join("\n");
-
-  return baseEmbed(Theme.primary)
-    .setAuthor({
-      name: "Yuta",
-      iconURL: client.user?.displayAvatarURL({ size: 64 }) ?? undefined,
+  const catBlock = CATEGORIES.filter((c) => counts.has(c.id))
+    .map((c) => {
+      const n = counts.get(c.id) ?? 0;
+      return `◈  **${c.label}**\n　\`${n}\` komut  ·  ${c.blurb}`;
     })
-    .setTitle("Komutlar")
+    .join("\n\n");
+
+  const sysBlock = SYSTEMS.map((s) => `✦  **${s.label}**  ·  \`${s.hint}\``).join("\n");
+
+  return baseEmbed(Theme.hollow)
+    .setAuthor({
+      name: "Y U T A",
+      iconURL: client.user?.displayAvatarURL({ size: 128 }) ?? undefined,
+    })
+    .setTitle("Hollow Menu")
+    .setThumbnail(client.user?.displayAvatarURL({ size: 256 }) ?? null)
     .setDescription(
       [
         line(),
+        "```",
+        "  COSMIC  ·  HOLLOW PURPLE",
+        "```",
+        line(),
         "**Kategoriler**",
-        catLines.join("\n"),
+        catBlock,
         line(),
         "**Sistemler**",
-        sysLines,
+        sysBlock,
         line(),
-        kv("Toplam", code(client.commands.size)),
-        kv("Plan", prem ? "**Premium**" : code("Ücretsiz")),
+        kv("Komut", code(client.commands.size)),
+        kv("Plan", prem ? "**Premium**" : code("Free")),
         line(),
-        "Menüden kategori veya sistem seç.",
+        "_Kategori veya sistem menüsünden seç._",
       ].join("\n")
-    );
+    )
+    .setFooter({ text: "Yuta · Hollow Purple" });
 }
 
 function categoryEmbed(client: YutaClient, categoryId: string): EmbedBuilder {
@@ -163,7 +171,7 @@ function categoryEmbed(client: YutaClient, categoryId: string): EmbedBuilder {
         ].join("\n")
       : "";
 
-  return baseEmbed(Theme.primary)
+  return baseEmbed(Theme.hollow)
     .setAuthor({ name: meta?.label ?? categoryId })
     .setDescription([line(), list, extra, line()].filter(Boolean).join("\n"))
     .setFooter({ text: `${commands.length} komut · Yuta` });
@@ -171,7 +179,7 @@ function categoryEmbed(client: YutaClient, categoryId: string): EmbedBuilder {
 
 function systemEmbed(value: string): EmbedBuilder {
   const body = SYS_HELP[value] ?? "Bilinmeyen sistem.";
-  return baseEmbed(Theme.primary)
+  return baseEmbed(Theme.hollow)
     .setAuthor({ name: "Sistem" })
     .setDescription([line(), body, line()].join("\n"));
 }

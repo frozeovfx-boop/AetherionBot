@@ -11,16 +11,19 @@ import {
  * One palette. No noise. Every embed reads the same.
  */
 export const Theme = {
-  primary: 0x8b5cf6 as ColorResolvable,
+  /** Hollow Purple — deep cosmic violet */
+  primary: 0x7c3aed as ColorResolvable,
+  /** Brighter hollow core */
+  hollow: 0xa855f7 as ColorResolvable,
   success: 0x34d399 as ColorResolvable,
-  danger: 0xf43f5e as ColorResolvable,
-  warning: 0xfbbf24 as ColorResolvable,
-  info: 0x38bdf8 as ColorResolvable,
+  danger: 0xe11d48 as ColorResolvable,
+  warning: 0xf59e0b as ColorResolvable,
+  info: 0x818cf8 as ColorResolvable,
   mute: 0x64748b as ColorResolvable,
-  economy: 0xf59e0b as ColorResolvable,
-  music: 0xec4899 as ColorResolvable,
-  mod: 0xf43f5e as ColorResolvable,
-  footer: "Yuta",
+  economy: 0xc084fc as ColorResolvable,
+  music: 0xd946ef as ColorResolvable,
+  mod: 0xe11d48 as ColorResolvable,
+  footer: "Yuta · Hollow",
 } as const;
 
 export function baseEmbed(color: ColorResolvable = Theme.primary): EmbedBuilder {
@@ -28,7 +31,7 @@ export function baseEmbed(color: ColorResolvable = Theme.primary): EmbedBuilder 
 }
 
 export function line(): string {
-  return "────────────────────────";
+  return "━━━━━━━━━━━━━━━━━━━━";
 }
 
 export function divider(): string {
