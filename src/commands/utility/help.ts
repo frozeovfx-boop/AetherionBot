@@ -134,28 +134,131 @@ function systemEmbed(value: string): EmbedBuilder {
 }
 
 
-function searchEmbed(client: YutaClient, query: string): EmbedBuilder {
-  const q = query.trim().toLowerCase();
-  const hits = publicCommands(client)
-    .filter(
-      (c) =>
-        c.name.includes(q) ||
-        c.description.toLowerCase().includes(q) ||
-        c.category.includes(q)
-    )
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .slice(0, 25);
+/** Turkish / alias expand for better hits */
+const SEARCH_ALIASES: Record<string, string[]> = {
+  ban: ["ban", "yasak"],
+  kick: ["kick", "at"],
+  mute: ["timeout", "mute", "sustur"],
+  ticket: ["ticket", "destek", "ticket-setup"],
+  cekilis: ["giveaway", "çekiliş", "cekilis"],
+  çekiliş: ["giveaway", "çekiliş"],
+  giveaway: ["giveaway"],
+  muzik: ["play", "music", "queue", "skip", "filter"],
+  müzik: ["play", "music", "queue", "skip"],
+  para: ["balance", "work", "daily", "economy", "pay"],
+  level: ["level", "rank", "xp"],
+  ai: ["ask", "conseil", "ai"],
+  premium: ["premium"],
+  log: ["logset", "log"],
+  rol: ["selfrole", "addrole", "role"],
+  oda: ["ozeloda", "tempvoice", "voice"],
+};
 
-  const body =
-    hits.length === 0
-      ? `**\`${query}\`** için sonuç yok.`
-      : hits.map((c) => `\`/${c.name}\`  ${c.description}`).join("\n");
+function expandQuery(raw: string): string[] {
+  const q = raw.trim().toLowerCase();
+  if (!q) return [];
+  const parts = new Set<string>([q]);
+  for (const [key, al] of Object.entries(SEARCH_ALIASES)) {
+    if (q.includes(key) || al.some((a) => a.includes(q) || q.includes(a))) {
+      al.forEach((a) => parts.add(a));
+      parts.add(key);
+    }
+  }
+  return [...parts];
+}
+
+function scoreCommand(
+  name: string,
+  description: string,
+  category: string,
+  terms: string[]
+): number {
+  const n = name.toLowerCase();
+  const d = description.toLowerCase();
+  const c = category.toLowerCase();
+  let score = 0;
+  for (const t of terms) {
+    if (n === t) score += 100;
+    else if (n.startsWith(t)) score += 70;
+    else if (n.includes(t)) score += 40;
+    if (c === t || c.includes(t)) score += 25;
+    if (d.includes(t)) score += 15;
+  }
+  return score;
+}
+
+function searchEmbed(client: YutaClient, query: string): EmbedBuilder {
+  const terms = expandQuery(query);
+  if (terms.length === 0) {
+    return baseEmbed(Theme.primary)
+      .setAuthor({ name: "Arama" })
+      .setDescription("Boş arama.");
+  }
+
+  const ranked = publicCommands(client)
+    .map((c) => ({
+      c,
+      score: scoreCommand(c.name, c.description, c.category, terms),
+    }))
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score || a.c.name.localeCompare(b.c.name))
+    .slice(0, 20);
+
+  const sysHits = SYSTEMS.filter((s) => {
+    const blob = `${s.label} ${s.cmd} ${s.value}`.toLowerCase();
+    return terms.some((t) => blob.includes(t));
+  }).slice(0, 6);
+
+  if (ranked.length === 0 && sysHits.length === 0) {
+    return baseEmbed(Theme.primary)
+      .setAuthor({ name: "🔍 Arama" })
+      .setDescription(
+        [
+          line(),
+          `**\`${query}\`** · sonuç yok`,
+          "",
+          "Dene: `ban` · `ticket` · `müzik` · `premium`",
+          line(),
+        ].join("\n")
+      );
+  }
+
+  const byCat = new Map<string, typeof ranked>();
+  for (const row of ranked) {
+    const list = byCat.get(row.c.category) ?? [];
+    list.push(row);
+    byCat.set(row.c.category, list);
+  }
+
+  const catLabel = (id: string) => CATEGORIES.find((x) => x.id === id)?.label ?? id;
+
+  const blocks: string[] = [];
+  for (const [cat, list] of byCat) {
+    blocks.push(`**${catLabel(cat)}**`);
+    for (const { c } of list) {
+      blocks.push(`\`/${c.name}\` — ${c.description}`);
+    }
+    blocks.push("");
+  }
+
+  if (sysHits.length) {
+    blocks.push("**Sistem**");
+    for (const s of sysHits) {
+      blocks.push(`\`${s.cmd}\` — ${s.label}`);
+    }
+  }
+
+  let body = blocks.join("\n").trim();
+  if (body.length > 3800) body = body.slice(0, 3790) + "\n…";
 
   return baseEmbed(Theme.primary)
-    .setAuthor({ name: "Arama" })
+    .setAuthor({ name: "🔍 Arama" })
     .setDescription([line(), body, line()].join("\n"))
-    .setFooter({ text: `${hits.length} sonuç · ${query.slice(0, 40)}` });
+    .setFooter({
+      text: `${ranked.length} komut · ${sysHits.length} sistem · ${query.slice(0, 32)}`,
+    });
 }
+
 
 function buildRows(client: YutaClient): ActionRowBuilder[] {
   const counts = countMap(client);
@@ -242,26 +345,27 @@ export default class HelpCommand extends Command {
       try {
         if (i.isButton()) {
           if (i.customId === "help_search") {
+            const modalId = `help_search_modal:${interaction.id}`;
             const modal = new ModalBuilder()
-              .setCustomId("help_search_modal")
-              .setTitle("Komut ara")
+              .setCustomId(modalId)
+              .setTitle("Yuta · Ara")
               .addComponents(
                 new ActionRowBuilder<TextInputBuilder>().addComponents(
                   new TextInputBuilder()
                     .setCustomId("q")
-                    .setLabel("Komut veya açıklama")
+                    .setLabel("Ne arıyorsun?")
                     .setStyle(TextInputStyle.Short)
-                    .setPlaceholder("ör: ban, ticket, premium")
+                    .setPlaceholder("ban · ticket · müzik · premium")
                     .setRequired(true)
-                    .setMaxLength(40)
+                    .setMinLength(1)
+                    .setMaxLength(48)
                 )
               );
             await i.showModal(modal);
             try {
               const sub = await i.awaitModalSubmit({
-                time: 90_000,
-                filter: (m) =>
-                  m.customId === "help_search_modal" && m.user.id === interaction.user.id,
+                time: 120_000,
+                filter: (m) => m.customId === modalId && m.user.id === interaction.user.id,
               });
               const q = sub.fields.getTextInputValue("q");
               await sub.update({
@@ -269,7 +373,7 @@ export default class HelpCommand extends Command {
                 components: rows,
               });
             } catch {
-              /* timeout / cancel */
+              /* timeout */
             }
             return;
           }
