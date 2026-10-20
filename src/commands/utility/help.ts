@@ -92,8 +92,7 @@ const SETUP_GUIDES: Record<
           "• **kategori** — ticket kanalları buraya açılır",
           "• **destek** — pinglenecek rol",
           "• **log** — kapanış kaydı",
-        ].join("
-"),
+        ].join("\n"),
       },
       {
         id: "buton",
@@ -107,8 +106,7 @@ const SETUP_GUIDES: Record<
           "• **destek** — türe özel rol (opsiyonel)",
           "",
           "Liste: `/ticket-setup buton-liste`",
-        ].join("
-"),
+        ].join("\n"),
       },
       {
         id: "panel",
@@ -121,8 +119,7 @@ const SETUP_GUIDES: Record<
           "• başlık / açıklama isteğe bağlı",
           "",
           "Üyeler butona basınca ticket açılır.",
-        ].join("
-"),
+        ].join("\n"),
       },
     ],
   },
@@ -132,20 +129,17 @@ const SETUP_GUIDES: Record<
       {
         id: "mod",
         label: "Mod",
-        body: ["**Mod log**", "", "`/logset mod`", "Ban · kick · warn · timeout", "", "Aynı: `/setmodlog`"].join("
-"),
+        body: ["**Mod log**", "", "`/logset mod`", "Ban · kick · warn · timeout", "", "Aynı: `/setmodlog`"].join("\n"),
       },
       {
         id: "mesaj",
         label: "Mesaj",
-        body: ["**Mesaj log**", "", "`/logset mesaj`", "Silinen ve düzenlenen mesajlar"].join("
-"),
+        body: ["**Mesaj log**", "", "`/logset mesaj`", "Silinen ve düzenlenen mesajlar"].join("\n"),
       },
       {
         id: "uye",
         label: "Üye / ses",
-        body: ["**Üye & ses**", "", "`/logset uye`", "`/logset ses`", "", "Özet: `/logset durum`"].join("
-"),
+        body: ["**Üye & ses**", "", "`/logset uye`", "`/logset ses`", "", "Özet: `/logset durum`"].join("\n"),
       },
     ],
   },
@@ -155,14 +149,12 @@ const SETUP_GUIDES: Record<
       {
         id: "temel",
         label: "Temel",
-        body: ["**Automod**", "", "`/automod davet` · `link` · `spam` · `kufur`", "Her biri aç / kapa"].join("
-"),
+        body: ["**Automod**", "", "`/automod davet` · `link` · `spam` · `kufur`", "Her biri aç / kapa"].join("\n"),
       },
       {
         id: "kelime",
         label: "Kelime",
-        body: ["**Kelime filtresi**", "", "`/automod kelime`", "`/automod muaf` — kanal muafiyeti"].join("
-"),
+        body: ["**Kelime filtresi**", "", "`/automod kelime`", "`/automod muaf` — kanal muafiyeti"].join("\n"),
       },
     ],
   },
@@ -172,8 +164,7 @@ const SETUP_GUIDES: Record<
       {
         id: "set",
         label: "Kur",
-        body: ["**Welcome**", "", "`/setwelcome`", "`{user}` `{server}` `{count}` `{inviter}`"].join("
-"),
+        body: ["**Welcome**", "", "`/setwelcome`", "`{user}` `{server}` `{count}` `{inviter}`"].join("\n"),
       },
     ],
   },
@@ -183,8 +174,7 @@ const SETUP_GUIDES: Record<
       {
         id: "panel",
         label: "Panel",
-        body: ["**Self-role**", "", "`/selfrole panel`", "Buton veya menü · kalıcı"].join("
-"),
+        body: ["**Self-role**", "", "`/selfrole panel`", "Buton veya menü · kalıcı"].join("\n"),
       },
     ],
   },
@@ -194,8 +184,7 @@ const SETUP_GUIDES: Record<
       {
         id: "baslat",
         label: "Başlat",
-        body: ["**Çekiliş**", "", "`/giveaway baslat`", "`/giveaway sans-rol`", "Mesajda Şansım butonu"].join("
-"),
+        body: ["**Çekiliş**", "", "`/giveaway baslat`", "`/giveaway sans-rol`", "Mesajda Şansım butonu"].join("\n"),
       },
     ],
   },
@@ -205,8 +194,7 @@ const SETUP_GUIDES: Record<
       {
         id: "hub",
         label: "Hub",
-        body: ["**Özel oda**", "", "`/ozeloda`", "Hub ses kanalını seç"].join("
-"),
+        body: ["**Özel oda**", "", "`/ozeloda`", "Hub ses kanalını seç"].join("\n"),
       },
     ],
   },
@@ -216,8 +204,7 @@ const SETUP_GUIDES: Record<
       {
         id: "durum",
         label: "Durum",
-        body: ["**Premium**", "", "`/premium durum`", "Sahip: `/premium ver`"].join("
-"),
+        body: ["**Premium**", "", "`/premium durum`", "Sahip: `/premium ver`"].join("\n"),
       },
     ],
   },
@@ -227,8 +214,7 @@ const SETUP_GUIDES: Record<
       {
         id: "use",
         label: "Kullan",
-        body: ["**Conseil**", "", "`/ask`", "`/conseil debate`", "`/conseil consult`", "Env: `GOOGLE_API_KEY`"].join("
-"),
+        body: ["**Conseil**", "", "`/ask`", "`/conseil debate`", "`/conseil consult`", "Env: `GOOGLE_API_KEY`"].join("\n"),
       },
     ],
   },
@@ -238,8 +224,7 @@ const SETUP_GUIDES: Record<
       {
         id: "ozet",
         label: "Özet",
-        body: ["**Ayarlar**", "", "`/ayarlar`", "Prefix · log · ticket özeti"].join("
-"),
+        body: ["**Ayarlar**", "", "`/ayarlar`", "Prefix · log · ticket özeti"].join("\n"),
       },
     ],
   },
@@ -280,8 +265,7 @@ function homeEmbed(client: YutaClient, guildId: string | null): EmbedBuilder {
   const prem = guildId ? isGuildPremium(client, guildId) : false;
   const total = publicCommands(client).length;
 
-  const setupBlock = SETUP_STEPS.map((s) => `\`${s.n}\` ${s.cmd} — **${s.label}**`).join("
-");
+  const setupBlock = SETUP_STEPS.map((s) => `\`${s.n}\` ${s.cmd} — **${s.label}**`).join("\n");
 
   const catBlock = CATEGORIES.filter((c) => counts.has(c.id))
     .map((c) => {
@@ -290,8 +274,7 @@ function homeEmbed(client: YutaClient, guildId: string | null): EmbedBuilder {
     })
     .join("\n\n");
 
-  const sysBlock = SYSTEMS.map((s) => `• \`${s.cmd}\` **${s.label}**`).join("
-");
+  const sysBlock = SYSTEMS.map((s) => `• \`${s.cmd}\` **${s.label}**`).join("\n");
 
   return baseEmbed(Theme.primary)
     .setAuthor({
@@ -305,8 +288,7 @@ function homeEmbed(client: YutaClient, guildId: string | null): EmbedBuilder {
         line(),
         "Sunucunu **sırayla** kur, sonra kategoriden komut seç.",
         line(),
-      ].join("
-")
+      ].join("\n")
     )
     .addFields(
       {
@@ -345,8 +327,7 @@ function categoryEmbed(client: YutaClient, categoryId: string): EmbedBuilder {
 
   return baseEmbed(Theme.primary)
     .setAuthor({ name: `${V1}  ${meta?.label ?? categoryId}` })
-    .setDescription([line(), list.slice(0, 3800), line()].join("
-"))
+    .setDescription([line(), list.slice(0, 3800), line()].join("\n"))
     .setFooter({
       text:
         categoryId === "server"
@@ -368,8 +349,7 @@ function systemEmbed(value: string): EmbedBuilder {
         hasGuide ? "_Alttaki yeşil butonlarla kurulum adımlarına bak._" : "",
       ]
         .filter(Boolean)
-        .join("
-")
+        .join("\n")
     )
     .setFooter({ text: meta?.cmd ?? "Yuta" });
 }
@@ -473,14 +453,12 @@ function searchEmbed(client: YutaClient, query: string): EmbedBuilder {
     for (const s of sysHits) blocks.push(`\`${s.cmd}\` — ${s.label}`);
   }
 
-  let body = blocks.join("
-").trim();
+  let body = blocks.join("\n").trim();
   if (body.length > 3800) body = `${body.slice(0, 3790)}\n…`;
 
   return baseEmbed(Theme.primary)
     .setAuthor({ name: `${V1} Arama` })
-    .setDescription([line(), body, line()].join("
-"))
+    .setDescription([line(), body, line()].join("\n"))
     .setFooter({ text: `${ranked.length} komut · ${sysHits.length} sistem · ${query.slice(0, 28)}` });
 }
 
@@ -541,9 +519,7 @@ function buildRows(client: YutaClient, focusSys?: string | null): ActionRowBuild
 
 function setupOnlyEmbed(): EmbedBuilder {
   const setupBlock = SETUP_STEPS.map((s) => `**${s.n}.** \`${s.cmd}\`
-${s.label}`).join("
-
-");
+${s.label}`).join("\n");
   return baseEmbed(Theme.primary)
     .setAuthor({ name: `${V1} · Kurulum` })
     .setTitle("Sırayla yap")
