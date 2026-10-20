@@ -5,7 +5,7 @@ import {
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { YutaClient } from "../../client/YutaClient.js";
-import { Theme, baseEmbed, line, code, kv } from "../../utils/embeds.js";
+import { yutaMod, yutaFail } from "../../utils/embeds.js";
 import { buildModEmbed, sendModLog } from "../../utils/modlog.js";
 
 export default class KickCommand extends Command {
@@ -37,7 +37,7 @@ export default class KickCommand extends Command {
 
     if (!member?.kickable) {
       await interaction.reply({
-        embeds: [baseEmbed(Theme.danger).setDescription("Bu kullanıcı atılamaz.")],
+        embeds: [yutaFail("Bu kullanıcı atılamaz.")],
         ephemeral: true,
       });
       return;
@@ -53,21 +53,16 @@ export default class KickCommand extends Command {
       reason,
     });
 
-    const embed = baseEmbed(Theme.mod)
-      .setAuthor({ name: "MODERASYON", iconURL: interaction.guild.iconURL({ size: 64 }) ?? undefined })
-      .setTitle("Atma")
-      .setThumbnail(target.displayAvatarURL({ size: 256 }))
-      .setDescription(
-        [
-          line(),
-          kv("Kullanıcı", target.tag),
-          kv("ID", code(target.id)),
-          kv("Yetkili", interaction.user.tag),
-          kv("Sebep", reason),
-          line(),
-        ].join("\n")
-      )
-      .setFooter({ text: `Case #${modCase.id} · Yuta` });
+    const embed = yutaMod({
+      title: "Atma",
+      targetTag: target.tag,
+      targetId: target.id,
+      targetAvatar: target.displayAvatarURL({ size: 256 }),
+      moderatorTag: interaction.user.tag,
+      reason,
+      caseId: modCase.id,
+      guildIcon: interaction.guild.iconURL({ size: 64 }),
+    });
 
     await interaction.reply({ embeds: [embed] });
 
@@ -84,6 +79,5 @@ export default class KickCommand extends Command {
         userAvatar: target.displayAvatarURL({ size: 256 }),
       })
     );
-
   }
 }

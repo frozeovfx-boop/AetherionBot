@@ -5,7 +5,7 @@ import {
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { YutaClient } from "../../client/YutaClient.js";
-import { Theme, baseEmbed, line, code, kv } from "../../utils/embeds.js";
+import { kv, yutaMod, yutaFail } from "../../utils/embeds.js";
 import { buildModEmbed, sendModLog } from "../../utils/modlog.js";
 
 export default class TimeoutCommand extends Command {
@@ -23,7 +23,12 @@ export default class TimeoutCommand extends Command {
         .setDescription("Kullanıcıya timeout uygular")
         .addUserOption((o) => o.setName("kullanici").setDescription("Hedef").setRequired(true))
         .addIntegerOption((o) =>
-          o.setName("dakika").setDescription("Süre (dakika)").setRequired(true).setMinValue(1).setMaxValue(40320)
+          o
+            .setName("dakika")
+            .setDescription("Süre (dakika)")
+            .setRequired(true)
+            .setMinValue(1)
+            .setMaxValue(40320)
         )
         .addStringOption((o) => o.setName("sebep").setDescription("Sebep").setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
@@ -41,7 +46,7 @@ export default class TimeoutCommand extends Command {
 
     if (!member?.moderatable) {
       await interaction.reply({
-        embeds: [baseEmbed(Theme.danger).setDescription("Bu kullanıcıya timeout uygulanamaz.")],
+        embeds: [yutaFail("Bu kullanıcıya timeout uygulanamaz.")],
         ephemeral: true,
       });
       return;
@@ -59,22 +64,17 @@ export default class TimeoutCommand extends Command {
       duration,
     });
 
-    const embed = baseEmbed(Theme.warning)
-      .setAuthor({ name: "MODERASYON", iconURL: interaction.guild.iconURL({ size: 64 }) ?? undefined })
-      .setTitle("Timeout")
-      .setThumbnail(target.displayAvatarURL({ size: 256 }))
-      .setDescription(
-        [
-          line(),
-          kv("Kullanıcı", target.tag),
-          kv("ID", code(target.id)),
-          kv("Yetkili", interaction.user.tag),
-          kv("Süre", `${minutes} dakika`),
-          kv("Sebep", reason),
-          line(),
-        ].join("\n")
-      )
-      .setFooter({ text: `Case #${modCase.id} · Yuta` });
+    const embed = yutaMod({
+      title: "Timeout",
+      targetTag: target.tag,
+      targetId: target.id,
+      targetAvatar: target.displayAvatarURL({ size: 256 }),
+      moderatorTag: interaction.user.tag,
+      reason,
+      caseId: modCase.id,
+      extra: [kv("Süre", `${minutes} dakika`)],
+      guildIcon: interaction.guild.iconURL({ size: 64 }),
+    });
 
     await interaction.reply({ embeds: [embed] });
 
@@ -92,6 +92,5 @@ export default class TimeoutCommand extends Command {
         userAvatar: target.displayAvatarURL({ size: 256 }),
       })
     );
-
   }
 }
