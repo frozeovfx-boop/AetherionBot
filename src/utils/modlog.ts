@@ -62,8 +62,8 @@ export function buildModEmbed(data: {
     );
 
   if (data.userAvatar) embed.setThumbnail(data.userAvatar);
-  if (data.caseId) embed.setFooter({ text: `Case #${data.caseId} · <:YutaV1:1562125028810555532> Yuta · v1` });
-  else embed.setFooter({ text: "<:YutaV1:1562125028810555532> Yuta · v1" });
+  if (data.caseId) embed.setFooter({ text: `Case #${data.caseId} · Yuta · v1` });
+  else embed.setFooter({ text: "Yuta · v1" });
   return embed;
 }
 

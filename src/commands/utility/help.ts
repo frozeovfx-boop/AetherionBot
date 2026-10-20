@@ -17,7 +17,7 @@ import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line } from "../../utils/embeds.js";
 import { FREE_LIMITS, isGuildPremium } from "../../utils/premium.js";
 
-const V1 = "<:YutaV1:1562125028810555532>";
+const V1 = "Yuta"; // custom emoji optional — raw id breaks if bot cannot use it
 
 const CATEGORIES: { id: string; label: string; blurb: string }[] = [
   { id: "moderation", label: "Moderasyon", blurb: "Ban · warn · timeout · case" },
@@ -74,7 +74,7 @@ const SYS_BODY: Record<string, string> = {
 };
 
 
-/** Step-by-step inside help — buttons show these, user still runs slash themselves */
+/** Step-by-step inside help — buttons show these */
 const SETUP_GUIDES: Record<
   string,
   { label: string; steps: { id: string; label: string; body: string }[] }
@@ -86,35 +86,43 @@ const SETUP_GUIDES: Record<
         id: "ayar",
         label: "1. Ayar",
         body: [
-          "**Ticket · Ayar**",
-          "Yetkili hesapla çalıştır:",
+          "**1 · Ayar**",
+          "",
           "`/ticket-setup ayar`",
-          "• kategori — ticket kanallarının altına gireceği kategori",
-          "• destek — pinglenecek rol",
-          "• log — kapanış transcript kanalı",
-        ].join("\\n"),
+          "• **kategori** — ticket kanalları buraya açılır",
+          "• **destek** — pinglenecek rol",
+          "• **log** — kapanış kaydı",
+        ].join("
+"),
       },
       {
         id: "buton",
         label: "2. Buton",
         body: [
-          "**Ticket · Buton**",
+          "**2 · Buton**",
+          "",
           "`/ticket-setup buton-ekle`",
-          "• yazı — örn. Destek, Rapor",
-          "• renk — Primary / Success / Danger…",
-          "• destek — bu türe özel rol (opsiyonel)",
+          "• **yazi** — Destek, Rapor…",
+          "• **renk** — Primary / Success / Danger",
+          "• **destek** — türe özel rol (opsiyonel)",
+          "",
           "Liste: `/ticket-setup buton-liste`",
-        ].join("\\n"),
+        ].join("
+"),
       },
       {
         id: "panel",
         label: "3. Panel",
         body: [
-          "**Ticket · Panel**",
-          "`/ticket-setup panel kanal:#…`",
-          "İstersen başlık / açıklama ekle.",
-          "Panel kanala iner; üyeler butona basar.",
-        ].join("\\n"),
+          "**3 · Panel**",
+          "",
+          "`/ticket-setup panel`",
+          "• **kanal** — panelin gideceği kanal",
+          "• başlık / açıklama isteğe bağlı",
+          "",
+          "Üyeler butona basınca ticket açılır.",
+        ].join("
+"),
       },
     ],
   },
@@ -123,18 +131,21 @@ const SETUP_GUIDES: Record<
     steps: [
       {
         id: "mod",
-        label: "Mod log",
-        body: "**Log · Mod**\\n`/logset mod kanal:#…`\\nBan · kick · warn · timeout buraya düşer.\\nAynı: `/setmodlog`",
+        label: "Mod",
+        body: ["**Mod log**", "", "`/logset mod`", "Ban · kick · warn · timeout", "", "Aynı: `/setmodlog`"].join("
+"),
       },
       {
         id: "mesaj",
         label: "Mesaj",
-        body: "**Log · Mesaj**\\n`/logset mesaj kanal:#…`\\nSilinen / düzenlenen mesajlar.",
+        body: ["**Mesaj log**", "", "`/logset mesaj`", "Silinen ve düzenlenen mesajlar"].join("
+"),
       },
       {
         id: "uye",
         label: "Üye / ses",
-        body: "**Log · Üye & Ses**\\n`/logset uye kanal:#…`\\n`/logset ses kanal:#…`\\nÖzet: `/logset durum`",
+        body: ["**Üye & ses**", "", "`/logset uye`", "`/logset ses`", "", "Özet: `/logset durum`"].join("
+"),
       },
     ],
   },
@@ -144,12 +155,14 @@ const SETUP_GUIDES: Record<
       {
         id: "temel",
         label: "Temel",
-        body: "**Automod**\\n`/automod davet` · `link` · `spam` · `kufur` — aç/kapa\\n`/automod durum` varsa kontrol et.",
+        body: ["**Automod**", "", "`/automod davet` · `link` · `spam` · `kufur`", "Her biri aç / kapa"].join("
+"),
       },
       {
         id: "kelime",
         label: "Kelime",
-        body: "**Yasak kelime**\\n`/automod kelime` — ekle / sil / liste\\n`/automod muaf` — kanal muafiyeti",
+        body: ["**Kelime filtresi**", "", "`/automod kelime`", "`/automod muaf` — kanal muafiyeti"].join("
+"),
       },
     ],
   },
@@ -159,7 +172,8 @@ const SETUP_GUIDES: Record<
       {
         id: "set",
         label: "Kur",
-        body: "**Welcome**\\n`/setwelcome`\\nKanal + mesaj.\\nPlaceholder: `{user}` `{server}` `{count}` `{inviter}`",
+        body: ["**Welcome**", "", "`/setwelcome`", "`{user}` `{server}` `{count}` `{inviter}`"].join("
+"),
       },
     ],
   },
@@ -169,7 +183,8 @@ const SETUP_GUIDES: Record<
       {
         id: "panel",
         label: "Panel",
-        body: "**Self-role**\\n`/selfrole panel`\\nButon veya menü paneli at.\\nRoller kalıcı kayıtlıdır.",
+        body: ["**Self-role**", "", "`/selfrole panel`", "Buton veya menü · kalıcı"].join("
+"),
       },
     ],
   },
@@ -179,7 +194,8 @@ const SETUP_GUIDES: Record<
       {
         id: "baslat",
         label: "Başlat",
-        body: "**Çekiliş**\\n`/giveaway baslat`\\nÖdül + süre.\\n`/giveaway sans-rol` — şans çarpanı\\nMesajda Şansım butonu.",
+        body: ["**Çekiliş**", "", "`/giveaway baslat`", "`/giveaway sans-rol`", "Mesajda Şansım butonu"].join("
+"),
       },
     ],
   },
@@ -189,7 +205,8 @@ const SETUP_GUIDES: Record<
       {
         id: "hub",
         label: "Hub",
-        body: "**Özel oda**\\n`/ozeloda`\\nHub ses kanalını seç.\\nÜye hub’a girince geçici oda açılır.",
+        body: ["**Özel oda**", "", "`/ozeloda`", "Hub ses kanalını seç"].join("
+"),
       },
     ],
   },
@@ -199,7 +216,8 @@ const SETUP_GUIDES: Record<
       {
         id: "durum",
         label: "Durum",
-        body: "**Premium**\\n`/premium durum`\\nAI limitlerini gör.\\nSahip: `/premium ver`",
+        body: ["**Premium**", "", "`/premium durum`", "Sahip: `/premium ver`"].join("
+"),
       },
     ],
   },
@@ -209,7 +227,8 @@ const SETUP_GUIDES: Record<
       {
         id: "use",
         label: "Kullan",
-        body: "**Conseil**\\n`/ask` — tek soru\\n`/conseil debate` — tartışma\\n`/conseil consult` — rapor\\nKey: `GOOGLE_API_KEY` env",
+        body: ["**Conseil**", "", "`/ask`", "`/conseil debate`", "`/conseil consult`", "Env: `GOOGLE_API_KEY`"].join("
+"),
       },
     ],
   },
@@ -219,7 +238,8 @@ const SETUP_GUIDES: Record<
       {
         id: "ozet",
         label: "Özet",
-        body: "**Ayarlar**\\n`/ayarlar`\\nPrefix · premium · log · ticket özeti (yetkili).",
+        body: ["**Ayarlar**", "", "`/ayarlar`", "Prefix · log · ticket özeti"].join("
+"),
       },
     ],
   },
@@ -227,26 +247,21 @@ const SETUP_GUIDES: Record<
 
 function guideEmbed(sysKey: string, stepId?: string): EmbedBuilder {
   const g = SETUP_GUIDES[sysKey];
-  if (!g) {
-    return systemEmbed(sysKey);
-  }
-  const step = stepId ? g.steps.find((s) => s.id === stepId) : g.steps[0];
-  const body = step?.body ?? SYS_BODY[sysKey] ?? "—";
-  const stepList = g.steps.map((s) => `• **${s.label}**`).join("\\n");
+  if (!g) return systemEmbed(sysKey);
+  const step = (stepId && g.steps.find((s) => s.id === stepId)) || g.steps[0]!;
   return baseEmbed(Theme.primary)
-    .setAuthor({ name: `${V1}  Kurulum · ${g.label}` })
-    .setDescription([line(), body, line(), "**Adımlar**", stepList, line()].join("\\n"))
-    .setFooter({ text: "Komutları sen çalıştırırsın · help açık kalsın" });
+    .setAuthor({ name: `${V1} · ${g.label}` })
+    .setTitle(step.label)
+    .setDescription(step.body)
+    .setFooter({ text: "Komutu kopyala · slash ile çalıştır" });
 }
 
 function categorySetupKey(categoryId: string): string | null {
   if (categoryId === "server") return "sys:ticket";
   if (categoryId === "moderation") return "sys:log";
   if (categoryId === "ai") return "sys:conseil";
-  if (categoryId === "music") return null;
   return null;
 }
-
 
 function publicCommands(client: YutaClient) {
   return [...client.commands.values()].filter((c) => c.category !== "admin" && !c.ownerOnly);
@@ -265,7 +280,8 @@ function homeEmbed(client: YutaClient, guildId: string | null): EmbedBuilder {
   const prem = guildId ? isGuildPremium(client, guildId) : false;
   const total = publicCommands(client).length;
 
-  const setupBlock = SETUP_STEPS.map((s) => `\`${s.n}\` ${s.cmd} — **${s.label}**`).join("\n");
+  const setupBlock = SETUP_STEPS.map((s) => `\`${s.n}\` ${s.cmd} — **${s.label}**`).join("
+");
 
   const catBlock = CATEGORIES.filter((c) => counts.has(c.id))
     .map((c) => {
@@ -274,7 +290,8 @@ function homeEmbed(client: YutaClient, guildId: string | null): EmbedBuilder {
     })
     .join("\n\n");
 
-  const sysBlock = SYSTEMS.map((s) => `• \`${s.cmd}\` **${s.label}**`).join("\n");
+  const sysBlock = SYSTEMS.map((s) => `• \`${s.cmd}\` **${s.label}**`).join("
+");
 
   return baseEmbed(Theme.primary)
     .setAuthor({
@@ -288,7 +305,8 @@ function homeEmbed(client: YutaClient, guildId: string | null): EmbedBuilder {
         line(),
         "Sunucunu **sırayla** kur, sonra kategoriden komut seç.",
         line(),
-      ].join("\n")
+      ].join("
+")
     )
     .addFields(
       {
@@ -327,7 +345,8 @@ function categoryEmbed(client: YutaClient, categoryId: string): EmbedBuilder {
 
   return baseEmbed(Theme.primary)
     .setAuthor({ name: `${V1}  ${meta?.label ?? categoryId}` })
-    .setDescription([line(), list.slice(0, 3800), line()].join("\n"))
+    .setDescription([line(), list.slice(0, 3800), line()].join("
+"))
     .setFooter({
       text:
         categoryId === "server"
@@ -349,7 +368,8 @@ function systemEmbed(value: string): EmbedBuilder {
         hasGuide ? "_Alttaki yeşil butonlarla kurulum adımlarına bak._" : "",
       ]
         .filter(Boolean)
-        .join("\n")
+        .join("
+")
     )
     .setFooter({ text: meta?.cmd ?? "Yuta" });
 }
@@ -453,12 +473,14 @@ function searchEmbed(client: YutaClient, query: string): EmbedBuilder {
     for (const s of sysHits) blocks.push(`\`${s.cmd}\` — ${s.label}`);
   }
 
-  let body = blocks.join("\n").trim();
+  let body = blocks.join("
+").trim();
   if (body.length > 3800) body = `${body.slice(0, 3790)}\n…`;
 
   return baseEmbed(Theme.primary)
     .setAuthor({ name: `${V1} Arama` })
-    .setDescription([line(), body, line()].join("\n"))
+    .setDescription([line(), body, line()].join("
+"))
     .setFooter({ text: `${ranked.length} komut · ${sysHits.length} sistem · ${query.slice(0, 28)}` });
 }
 
@@ -518,11 +540,17 @@ function buildRows(client: YutaClient, focusSys?: string | null): ActionRowBuild
 }
 
 function setupOnlyEmbed(): EmbedBuilder {
-  const setupBlock = SETUP_STEPS.map((s) => `**${s.n}.** \`${s.cmd}\`\n　${s.label}`).join("\n\n");
+  const setupBlock = SETUP_STEPS.map((s) => `**${s.n}.** \`${s.cmd}\`
+${s.label}`).join("
+
+");
   return baseEmbed(Theme.primary)
-    .setAuthor({ name: `${V1} Kurulum` })
+    .setAuthor({ name: `${V1} · Kurulum` })
     .setTitle("Sırayla yap")
-    .setDescription([line(), setupBlock, line(), "Yetkili hesabınla bu komutları kullan.", line()].join("\n"));
+    .setDescription(setupBlock + "
+
+Yetkili hesap gerekli.")
+    .setFooter({ text: "Alttan ticket adımlarına geç" });
 }
 
 export default class HelpCommand extends Command {

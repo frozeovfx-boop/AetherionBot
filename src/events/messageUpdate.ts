@@ -29,7 +29,7 @@ export default class MessageUpdateEvent extends Event<typeof Events.MessageUpdat
     if (before === after) return;
 
     const embed = baseEmbed(Theme.warning)
-      .setAuthor({ name: "<:YutaV1:1562125028810555532>  Mesaj düzenlendi" })
+      .setAuthor({ name: "Mesaj düzenlendi" })
       .setDescription(
         [
           line(),

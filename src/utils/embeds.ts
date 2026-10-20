@@ -23,7 +23,7 @@ export const Theme = {
   economy: 0x8918f5 as ColorResolvable,
   music: 0xa855f7 as ColorResolvable,
   mod: 0xe11d48 as ColorResolvable,
-  footer: "<:YutaV1:1562125028810555532> Yuta · v1",
+  footer: "Yuta · v1",
 } as const;
 
 export function baseEmbed(color: ColorResolvable = Theme.primary): EmbedBuilder {
@@ -98,7 +98,7 @@ export function bar(ratio: number, size = 12): string {
 export const ConseilTheme = {
   cyan: 0x8918f5 as ColorResolvable,
   purple: 0x8918f5 as ColorResolvable,
-  footer: "<:YutaV1:1562125028810555532> Yuta · Conseil",
+  footer: "Yuta · Conseil",
 } as const;
 
 export function conseilEmbed(color: ColorResolvable = ConseilTheme.purple): EmbedBuilder {
@@ -143,11 +143,11 @@ export function yutaMod(opts: {
     line(),
   ];
   const e = baseEmbed(Theme.mod)
-    .setAuthor({ name: "<:YutaV1:1562125028810555532>  MOD", iconURL: opts.guildIcon ?? undefined })
+    .setAuthor({ name: "MOD", iconURL: opts.guildIcon ?? undefined })
     .setTitle(opts.title)
     .setDescription(rows.join("\n"));
   if (opts.targetAvatar) e.setThumbnail(opts.targetAvatar);
-  if (opts.caseId != null) e.setFooter({ text: `Case #${opts.caseId} · <:YutaV1:1562125028810555532> Yuta · v1` });
+  if (opts.caseId != null) e.setFooter({ text: `Case #${opts.caseId} · Yuta · v1` });
   return e;
 }
 
@@ -165,12 +165,12 @@ export function yutaMemberCard(opts: {
   return e;
 }
 
-const V1 = "<:YutaV1:1562125028810555532>";
+const V1 = "Yuta";
 
 /** Success / setup confirmation — purple brand, not generic green spam */
 export function yutaOk(title: string, body: string): EmbedBuilder {
   return baseEmbed(Theme.primary)
-    .setAuthor({ name: `${V1}  ${title}` })
+    .setAuthor({ name: `Yuta · ${title}` })
     .setDescription([line(), body, line()].join("\n"));
 }
 
@@ -193,7 +193,7 @@ export function yutaTicketOpen(opts: {
   if (opts.note) rows.push(kv("Not", opts.note));
   rows.push(line());
   const e = baseEmbed(Theme.primary)
-    .setAuthor({ name: `${V1}  Ticket` })
+    .setAuthor({ name: `Ticket` })
     .setTitle(opts.typeLabel)
     .setDescription(rows.join("\n"))
     .setFooter({ text: Theme.footer });
