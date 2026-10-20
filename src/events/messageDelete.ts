@@ -20,7 +20,7 @@ export default class MessageDeleteEvent extends Event<typeof Events.MessageDelet
 
     const content = message.content?.slice(0, 1000) || "*içerik yok / embed / dosya*";
     const embed = baseEmbed(Theme.danger)
-      .setAuthor({ name: "MESAJ · SİLİNDİ" })
+      .setAuthor({ name: "<:YutaV1:1562125028810555532>  Mesaj silindi" })
       .setDescription(
         [
           line(),
