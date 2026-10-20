@@ -73,6 +73,181 @@ const SYS_BODY: Record<string, string> = {
     "**Ayarlar**\n`/ayarlar` — sunucu özeti (yetkili)\nPrefix · premium · kanallar",
 };
 
+
+/** Step-by-step inside help — buttons show these, user still runs slash themselves */
+const SETUP_GUIDES: Record<
+  string,
+  { label: string; steps: { id: string; label: string; body: string }[] }
+> = {
+  "sys:ticket": {
+    label: "Ticket",
+    steps: [
+      {
+        id: "ayar",
+        label: "1. Ayar",
+        body: [
+          "**Ticket · Ayar**",
+          "Yetkili hesapla çalıştır:",
+          "`/ticket-setup ayar`",
+          "• kategori — ticket kanallarının altına gireceği kategori",
+          "• destek — pinglenecek rol",
+          "• log — kapanış transcript kanalı",
+        ].join("\\n"),
+      },
+      {
+        id: "buton",
+        label: "2. Buton",
+        body: [
+          "**Ticket · Buton**",
+          "`/ticket-setup buton-ekle`",
+          "• yazı — örn. Destek, Rapor",
+          "• renk — Primary / Success / Danger…",
+          "• destek — bu türe özel rol (opsiyonel)",
+          "Liste: `/ticket-setup buton-liste`",
+        ].join("\\n"),
+      },
+      {
+        id: "panel",
+        label: "3. Panel",
+        body: [
+          "**Ticket · Panel**",
+          "`/ticket-setup panel kanal:#…`",
+          "İstersen başlık / açıklama ekle.",
+          "Panel kanala iner; üyeler butona basar.",
+        ].join("\\n"),
+      },
+    ],
+  },
+  "sys:log": {
+    label: "Log",
+    steps: [
+      {
+        id: "mod",
+        label: "Mod log",
+        body: "**Log · Mod**\\n`/logset mod kanal:#…`\\nBan · kick · warn · timeout buraya düşer.\\nAynı: `/setmodlog`",
+      },
+      {
+        id: "mesaj",
+        label: "Mesaj",
+        body: "**Log · Mesaj**\\n`/logset mesaj kanal:#…`\\nSilinen / düzenlenen mesajlar.",
+      },
+      {
+        id: "uye",
+        label: "Üye / ses",
+        body: "**Log · Üye & Ses**\\n`/logset uye kanal:#…`\\n`/logset ses kanal:#…`\\nÖzet: `/logset durum`",
+      },
+    ],
+  },
+  "sys:automod": {
+    label: "Automod",
+    steps: [
+      {
+        id: "temel",
+        label: "Temel",
+        body: "**Automod**\\n`/automod davet` · `link` · `spam` · `kufur` — aç/kapa\\n`/automod durum` varsa kontrol et.",
+      },
+      {
+        id: "kelime",
+        label: "Kelime",
+        body: "**Yasak kelime**\\n`/automod kelime` — ekle / sil / liste\\n`/automod muaf` — kanal muafiyeti",
+      },
+    ],
+  },
+  "sys:welcome": {
+    label: "Welcome",
+    steps: [
+      {
+        id: "set",
+        label: "Kur",
+        body: "**Welcome**\\n`/setwelcome`\\nKanal + mesaj.\\nPlaceholder: `{user}` `{server}` `{count}` `{inviter}`",
+      },
+    ],
+  },
+  "sys:selfrole": {
+    label: "Self-role",
+    steps: [
+      {
+        id: "panel",
+        label: "Panel",
+        body: "**Self-role**\\n`/selfrole panel`\\nButon veya menü paneli at.\\nRoller kalıcı kayıtlıdır.",
+      },
+    ],
+  },
+  "sys:giveaway": {
+    label: "Çekiliş",
+    steps: [
+      {
+        id: "baslat",
+        label: "Başlat",
+        body: "**Çekiliş**\\n`/giveaway baslat`\\nÖdül + süre.\\n`/giveaway sans-rol` — şans çarpanı\\nMesajda Şansım butonu.",
+      },
+    ],
+  },
+  "sys:tempvoice": {
+    label: "Özel oda",
+    steps: [
+      {
+        id: "hub",
+        label: "Hub",
+        body: "**Özel oda**\\n`/ozeloda`\\nHub ses kanalını seç.\\nÜye hub’a girince geçici oda açılır.",
+      },
+    ],
+  },
+  "sys:premium": {
+    label: "Premium",
+    steps: [
+      {
+        id: "durum",
+        label: "Durum",
+        body: "**Premium**\\n`/premium durum`\\nAI limitlerini gör.\\nSahip: `/premium ver`",
+      },
+    ],
+  },
+  "sys:conseil": {
+    label: "Conseil",
+    steps: [
+      {
+        id: "use",
+        label: "Kullan",
+        body: "**Conseil**\\n`/ask` — tek soru\\n`/conseil debate` — tartışma\\n`/conseil consult` — rapor\\nKey: `GOOGLE_API_KEY` env",
+      },
+    ],
+  },
+  "sys:ayarlar": {
+    label: "Ayarlar",
+    steps: [
+      {
+        id: "ozet",
+        label: "Özet",
+        body: "**Ayarlar**\\n`/ayarlar`\\nPrefix · premium · log · ticket özeti (yetkili).",
+      },
+    ],
+  },
+};
+
+function guideEmbed(sysKey: string, stepId?: string): EmbedBuilder {
+  const g = SETUP_GUIDES[sysKey];
+  if (!g) {
+    return systemEmbed(sysKey);
+  }
+  const step = stepId ? g.steps.find((s) => s.id === stepId) : g.steps[0];
+  const body = step?.body ?? SYS_BODY[sysKey] ?? "—";
+  const stepList = g.steps.map((s) => `• **${s.label}**`).join("\\n");
+  return baseEmbed(Theme.primary)
+    .setAuthor({ name: `${V1}  Kurulum · ${g.label}` })
+    .setDescription([line(), body, line(), "**Adımlar**", stepList, line()].join("\\n"))
+    .setFooter({ text: "Komutları sen çalıştırırsın · help açık kalsın" });
+}
+
+function categorySetupKey(categoryId: string): string | null {
+  if (categoryId === "server") return "sys:ticket";
+  if (categoryId === "moderation") return "sys:log";
+  if (categoryId === "ai") return "sys:conseil";
+  if (categoryId === "music") return null;
+  return null;
+}
+
+
 function publicCommands(client: YutaClient) {
   return [...client.commands.values()].filter((c) => c.category !== "admin" && !c.ownerOnly);
 }
@@ -153,14 +328,29 @@ function categoryEmbed(client: YutaClient, categoryId: string): EmbedBuilder {
   return baseEmbed(Theme.primary)
     .setAuthor({ name: `${V1}  ${meta?.label ?? categoryId}` })
     .setDescription([line(), list.slice(0, 3800), line()].join("\n"))
-    .setFooter({ text: `${commands.length} komut · menüden geri dön` });
+    .setFooter({
+      text:
+        categoryId === "server"
+          ? `${commands.length} komut · altta kurulum butonları`
+          : `${commands.length} komut · menüden geri dön`,
+    });
 }
 
 function systemEmbed(value: string): EmbedBuilder {
   const meta = SYSTEMS.find((s) => s.value === value);
+  const hasGuide = Boolean(SETUP_GUIDES[value]);
   return baseEmbed(Theme.primary)
     .setAuthor({ name: `${V1}  ${meta?.label ?? "Sistem"}` })
-    .setDescription([line(), SYS_BODY[value] ?? "—", line()].join("\n"))
+    .setDescription(
+      [
+        line(),
+        SYS_BODY[value] ?? "—",
+        line(),
+        hasGuide ? "_Alttaki yeşil butonlarla kurulum adımlarına bak._" : "",
+      ]
+        .filter(Boolean)
+        .join("\n")
+    )
     .setFooter({ text: meta?.cmd ?? "Yuta" });
 }
 
@@ -272,7 +462,7 @@ function searchEmbed(client: YutaClient, query: string): EmbedBuilder {
     .setFooter({ text: `${ranked.length} komut · ${sysHits.length} sistem · ${query.slice(0, 28)}` });
 }
 
-function buildRows(client: YutaClient): ActionRowBuilder[] {
+function buildRows(client: YutaClient, focusSys?: string | null): ActionRowBuilder[] {
   const counts = countMap(client);
 
   const catMenu = new StringSelectMenuBuilder()
@@ -304,11 +494,27 @@ function buildRows(client: YutaClient): ActionRowBuilder[] {
     new ButtonBuilder().setCustomId("help_premium").setLabel("Premium").setStyle(ButtonStyle.Primary)
   );
 
-  return [
+  const rows: ActionRowBuilder[] = [
     new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(catMenu),
     new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(sysMenu),
     nav,
   ];
+
+  const guide = focusSys ? SETUP_GUIDES[focusSys] : null;
+  if (guide && guide.steps.length > 0) {
+    const setupRow = new ActionRowBuilder<ButtonBuilder>();
+    for (const s of guide.steps.slice(0, 5)) {
+      setupRow.addComponents(
+        new ButtonBuilder()
+          .setCustomId(`help_guide:${focusSys}:${s.id}`)
+          .setLabel(s.label.slice(0, 80))
+          .setStyle(ButtonStyle.Success)
+      );
+    }
+    rows.push(setupRow);
+  }
+
+  return rows;
 }
 
 function setupOnlyEmbed(): EmbedBuilder {
@@ -370,7 +576,7 @@ export default class HelpCommand extends Command {
               });
               await sub.update({
                 embeds: [searchEmbed(client, sub.fields.getTextInputValue("q"))],
-                components: rows,
+                components: buildRows(client, null),
               });
             } catch {
               /* timeout */
@@ -378,28 +584,59 @@ export default class HelpCommand extends Command {
             return;
           }
           if (i.customId === "help_home") {
-            await i.update({ embeds: [homeEmbed(client, interaction.guildId)], components: rows });
+            await i.update({
+              embeds: [homeEmbed(client, interaction.guildId)],
+              components: buildRows(client, null),
+            });
             return;
           }
           if (i.customId === "help_setup") {
-            await i.update({ embeds: [setupOnlyEmbed()], components: rows });
+            await i.update({
+              embeds: [setupOnlyEmbed()],
+              components: buildRows(client, "sys:ticket"),
+            });
             return;
           }
           if (i.customId === "help_premium") {
-            await i.update({ embeds: [systemEmbed("sys:premium")], components: rows });
+            await i.update({
+              embeds: [systemEmbed("sys:premium")],
+              components: buildRows(client, "sys:premium"),
+            });
+            return;
+          }
+          if (i.customId.startsWith("help_guide:")) {
+            const parts = i.customId.split(":");
+            const sysKey = `${parts[1]}:${parts[2]}`;
+            const stepId = parts[3];
+            await i.update({
+              embeds: [guideEmbed(sysKey, stepId)],
+              components: buildRows(client, sysKey),
+            });
             return;
           }
         }
         if (i.isStringSelectMenu()) {
           const v = i.values[0]!;
           if (i.customId === "help_cat") {
-            const embed =
-              v === "home" ? homeEmbed(client, interaction.guildId) : categoryEmbed(client, v);
-            await i.update({ embeds: [embed], components: rows });
+            if (v === "home") {
+              await i.update({
+                embeds: [homeEmbed(client, interaction.guildId)],
+                components: buildRows(client, null),
+              });
+              return;
+            }
+            const focus = categorySetupKey(v);
+            await i.update({
+              embeds: [categoryEmbed(client, v)],
+              components: buildRows(client, focus),
+            });
             return;
           }
           if (i.customId === "help_sys") {
-            await i.update({ embeds: [systemEmbed(v)], components: rows });
+            await i.update({
+              embeds: [systemEmbed(v)],
+              components: buildRows(client, v),
+            });
           }
         }
       } catch (err) {
