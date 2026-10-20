@@ -5,7 +5,7 @@ import {
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { YutaClient } from "../../client/YutaClient.js";
-import { Theme, baseEmbed, line, code, kv } from "../../utils/embeds.js";
+import { Theme, baseEmbed, line, code, kv, yutaMod, yutaFail } from "../../utils/embeds.js";
 import { buildModEmbed, sendModLog } from "../../utils/modlog.js";
 
 export default class BanCommand extends Command {
@@ -40,11 +40,11 @@ export default class BanCommand extends Command {
     const member = await interaction.guild.members.fetch(target.id).catch(() => null);
 
     if (target.id === interaction.user.id) {
-      await interaction.reply({ embeds: [baseEmbed(Theme.warning).setDescription("Kendini yasaklayamazsın.")], ephemeral: true });
+      await interaction.reply({ embeds: [yutaFail("Kendini yasaklayamazsın.")], ephemeral: true });
       return;
     }
     if (member && !member.bannable) {
-      await interaction.reply({ embeds: [baseEmbed(Theme.danger).setDescription("Bu kullanıcı yasaklanamaz.")], ephemeral: true });
+      await interaction.reply({ embeds: [yutaFail("Bu kullanıcı yasaklanamaz.")], ephemeral: true });
       return;
     }
 
@@ -61,24 +61,17 @@ export default class BanCommand extends Command {
       reason,
     });
 
-    const embed = baseEmbed(Theme.mod)
-      .setAuthor({ name: "MODERASYON", iconURL: interaction.guild.iconURL({ size: 64 }) ?? undefined })
-      .setTitle("Yasaklama")
-      .setThumbnail(target.displayAvatarURL({ size: 256 }))
-      .setDescription(
-        [
-          line(),
-          kv("Kullanıcı", `${target.tag}`),
-          kv("ID", code(target.id)),
-          kv("Yetkili", interaction.user.tag),
-          kv("Sebep", reason),
-          days ? kv("Silinen", `${days} gün mesaj`) : null,
-          line(),
-        ]
-          .filter(Boolean)
-          .join("\n")
-      )
-      .setFooter({ text: `Case #${modCase.id} · Yuta` });
+    const embed = yutaMod({
+      title: "Yasaklama",
+      targetTag: target.tag,
+      targetId: target.id,
+      targetAvatar: target.displayAvatarURL({ size: 256 }),
+      moderatorTag: interaction.user.tag,
+      reason,
+      caseId: modCase.id,
+      extra: days ? [kv("Silinen", `${days} gün mesaj`)] : [],
+      guildIcon: interaction.guild.iconURL({ size: 64 }),
+    });
 
     await interaction.reply({ embeds: [embed] });
 

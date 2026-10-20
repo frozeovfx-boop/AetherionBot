@@ -104,3 +104,64 @@ export const ConseilTheme = {
 export function conseilEmbed(color: ColorResolvable = ConseilTheme.purple): EmbedBuilder {
   return new EmbedBuilder().setColor(color).setTimestamp().setFooter({ text: ConseilTheme.footer });
 }
+
+/** Short system notice (errors, limits, permission) */
+export function yutaNotice(
+  title: string,
+  body: string,
+  color: ColorResolvable = Theme.primary
+): EmbedBuilder {
+  return baseEmbed(color)
+    .setAuthor({ name: title })
+    .setDescription([line(), body, line()].join("\n"));
+}
+
+/** Permission / soft fail — purple, not panic red */
+export function yutaFail(body: string): EmbedBuilder {
+  return yutaNotice("Yuta", body, Theme.mute);
+}
+
+/** Destructive mod action card */
+export function yutaMod(opts: {
+  title: string;
+  targetTag: string;
+  targetId: string;
+  targetAvatar?: string | null;
+  moderatorTag: string;
+  reason: string;
+  caseId?: number;
+  extra?: string[];
+  guildIcon?: string | null;
+}): EmbedBuilder {
+  const rows = [
+    line(),
+    kv("Kullanıcı", opts.targetTag),
+    kv("ID", code(opts.targetId)),
+    kv("Yetkili", opts.moderatorTag),
+    kv("Sebep", opts.reason),
+    ...(opts.extra ?? []),
+    line(),
+  ];
+  const e = baseEmbed(Theme.mod)
+    .setAuthor({ name: "MOD", iconURL: opts.guildIcon ?? undefined })
+    .setTitle(opts.title)
+    .setDescription(rows.join("\n"));
+  if (opts.targetAvatar) e.setThumbnail(opts.targetAvatar);
+  if (opts.caseId != null) e.setFooter({ text: `Case #${opts.caseId} · Yuta` });
+  return e;
+}
+
+/** Welcome / leave — same hollow frame */
+export function yutaMemberCard(opts: {
+  title: string;
+  description: string;
+  avatarUrl?: string | null;
+  guildIcon?: string | null;
+}): EmbedBuilder {
+  const e = baseEmbed(Theme.primary)
+    .setAuthor({ name: opts.title, iconURL: opts.guildIcon ?? undefined })
+    .setDescription([line(), opts.description, line()].join("\n"));
+  if (opts.avatarUrl) e.setThumbnail(opts.avatarUrl);
+  return e;
+}
+

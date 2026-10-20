@@ -1,7 +1,7 @@
 import { Events, GuildMember, TextChannel, Collection } from "discord.js";
 import { Event } from "../structures/Event.js";
 import type { YutaClient } from "../client/YutaClient.js";
-import { Theme, baseEmbed, line, kv, code } from "../utils/embeds.js";
+import { Theme, baseEmbed, line, kv, code, yutaMemberCard } from "../utils/embeds.js";
 
 export default class GuildMemberAddEvent extends Event<typeof Events.GuildMemberAdd> {
   constructor() {
@@ -98,15 +98,12 @@ export default class GuildMemberAddEvent extends Event<typeof Events.GuildMember
         .replaceAll("{count}", String(member.guild.memberCount));
       text = text.replaceAll("{inviter}", inviterTag);
 
-      const embed = baseEmbed(Theme.success)
-        .setAuthor({
-          name: member.user.tag,
-          iconURL: member.user.displayAvatarURL({ size: 64 }),
-        })
-        .setTitle("Hoş Geldin")
-        .setThumbnail(member.user.displayAvatarURL({ size: 256 }))
-        .setDescription([line(), text, line()].join("\n"))
-        .setFooter({ text: `Üye #${member.guild.memberCount} · Yuta` });
+      const embed = yutaMemberCard({
+        title: "Hoş geldin",
+        description: `${text}\n\n**${member.guild.memberCount}** üye`,
+        avatarUrl: member.user.displayAvatarURL({ size: 256 }),
+        guildIcon: member.guild.iconURL({ size: 64 }),
+      });
 
       await (channel as TextChannel).send({ embeds: [embed] });
     } catch (err) {

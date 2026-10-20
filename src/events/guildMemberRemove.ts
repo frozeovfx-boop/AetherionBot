@@ -1,7 +1,7 @@
 import { Events, GuildMember, PartialGuildMember, TextChannel } from "discord.js";
 import { Event } from "../structures/Event.js";
 import type { YutaClient } from "../client/YutaClient.js";
-import { Theme, baseEmbed, line } from "../utils/embeds.js";
+import { line, yutaMemberCard } from "../utils/embeds.js";
 
 export default class GuildMemberRemoveEvent extends Event<typeof Events.GuildMemberRemove> {
   constructor() {
@@ -34,13 +34,12 @@ export default class GuildMemberRemoveEvent extends Event<typeof Events.GuildMem
         .replaceAll("{server}", member.guild.name)
         .replaceAll("{count}", String(member.guild.memberCount));
 
-      const embed = baseEmbed(Theme.mute)
-        .setAuthor({
-          name: tag,
-          iconURL: member.user?.displayAvatarURL({ size: 64 }),
-        })
-        .setTitle("Ayrıldı")
-        .setDescription([line(), text, line()].join("\n"));
+      const embed = yutaMemberCard({
+        title: "Ayrıldı",
+        description: text,
+        avatarUrl: member.user?.displayAvatarURL({ size: 256 }) ?? null,
+        guildIcon: member.guild.iconURL({ size: 64 }),
+      });
 
       await (channel as TextChannel).send({ embeds: [embed] });
     } catch (err) {

@@ -17,6 +17,7 @@ import {
 } from "discord.js";
 import { Event } from "../structures/Event.js";
 import type { YutaClient } from "../client/YutaClient.js";
+import { yutaFail, yutaNotice } from "../utils/embeds.js";
 
 export default class InteractionCreateEvent extends Event<typeof Events.InteractionCreate> {
   constructor() {
@@ -71,7 +72,7 @@ export default class InteractionCreateEvent extends Event<typeof Events.Interact
 
     const command = client.commands.get(interaction.commandName);
     if (!command) {
-      await interaction.reply({ content: "Bu komut yüklenemedi.", ephemeral: true }).catch(() => null);
+      await interaction.reply({ embeds: [yutaFail("Komut yüklenemedi.")], ephemeral: true }).catch(() => null);
       return;
     }
 
@@ -99,7 +100,7 @@ export default class InteractionCreateEvent extends Event<typeof Events.Interact
     setTimeout(() => timestamps.delete(interaction.user.id), cooldownAmount);
 
     if (command.ownerOnly && !client.config.ownerIds.includes(interaction.user.id)) {
-      await interaction.reply({ content: "Bu komutu sadece bot sahibi kullanabilir.", ephemeral: true });
+      await interaction.reply({ embeds: [yutaFail("Sadece bot sahibi.")], ephemeral: true });
       return;
     }
 
@@ -107,7 +108,7 @@ export default class InteractionCreateEvent extends Event<typeof Events.Interact
       await command.execute(client, interaction);
     } catch (error) {
       client.logger.error(error, `Error executing command ${command.name}`);
-      const reply = { content: "Komut çalıştırılırken bir hata oluştu.", ephemeral: true };
+      const reply = { embeds: [yutaFail("Bir hata oluştu. Log kontrol et.")], ephemeral: true };
       if (interaction.replied || interaction.deferred) {
         await interaction.followUp(reply);
       } else {
