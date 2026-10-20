@@ -143,7 +143,7 @@ export function yutaMod(opts: {
     line(),
   ];
   const e = baseEmbed(Theme.mod)
-    .setAuthor({ name: "MOD", iconURL: opts.guildIcon ?? undefined })
+    .setAuthor({ name: "<:YutaV1:1562125028810555532>  MOD", iconURL: opts.guildIcon ?? undefined })
     .setTitle(opts.title)
     .setDescription(rows.join("\n"));
   if (opts.targetAvatar) e.setThumbnail(opts.targetAvatar);
@@ -165,3 +165,38 @@ export function yutaMemberCard(opts: {
   return e;
 }
 
+const V1 = "<:YutaV1:1562125028810555532>";
+
+/** Success / setup confirmation — purple brand, not generic green spam */
+export function yutaOk(title: string, body: string): EmbedBuilder {
+  return baseEmbed(Theme.primary)
+    .setAuthor({ name: `${V1}  ${title}` })
+    .setDescription([line(), body, line()].join("\n"));
+}
+
+/** Ticket channel welcome card */
+export function yutaTicketOpen(opts: {
+  typeLabel: string;
+  userTag: string;
+  userMention: string;
+  note?: string;
+  avatarUrl?: string | null;
+}): EmbedBuilder {
+  const rows = [
+    line(),
+    `Merhaba ${opts.userMention}`,
+    "Konunu **net** yaz. Ekip buradan takip eder.",
+    line(),
+    kv("Tür", opts.typeLabel),
+    kv("Sahip", opts.userTag),
+  ];
+  if (opts.note) rows.push(kv("Not", opts.note));
+  rows.push(line());
+  const e = baseEmbed(Theme.primary)
+    .setAuthor({ name: `${V1}  Ticket` })
+    .setTitle(opts.typeLabel)
+    .setDescription(rows.join("\n"))
+    .setFooter({ text: Theme.footer });
+  if (opts.avatarUrl) e.setThumbnail(opts.avatarUrl);
+  return e;
+}

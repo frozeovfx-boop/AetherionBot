@@ -197,25 +197,14 @@ async function handleTicketCreate(client: YutaClient, interaction: ButtonInterac
     reason: `Ticket | ${interaction.user.tag}`,
   });
 
-  const { Theme, baseEmbed, line, kv } = await import("../utils/embeds.js");
-  const embed = baseEmbed(Theme.primary)
-    .setAuthor({ name: "TICKET" })
-    .setTitle(`${btnMeta.label}`)
-    .setDescription(
-      [
-        line(),
-        `Merhaba ${interaction.user}`,
-        "Sorununu net yaz. Ekip en kısa sürede dönecek.",
-        line(),
-        kv("Tür", btnMeta.label),
-        kv("Sahip", interaction.user.tag),
-        btnMeta.description ? kv("Not", btnMeta.description) : null,
-        line(),
-      ]
-        .filter(Boolean)
-        .join("\n")
-    )
-    .setFooter({ text: "Yuta" });
+  const { yutaTicketOpen, yutaOk } = await import("../utils/embeds.js");
+  const embed = yutaTicketOpen({
+    typeLabel: btnMeta.label,
+    userTag: interaction.user.tag,
+    userMention: `${interaction.user}`,
+    note: btnMeta.description,
+    avatarUrl: interaction.user.displayAvatarURL({ size: 256 }),
+  });
 
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
@@ -235,16 +224,22 @@ async function handleTicketCreate(client: YutaClient, interaction: ButtonInterac
     : `${interaction.user}`;
 
   await channel.send({ content: ping, embeds: [embed], components: [row] });
-  await interaction.editReply({ content: `Ticket açıldı: ${channel}` });
+  await interaction.editReply({
+    embeds: [
+      yutaOk(
+        "Ticket açıldı",
+        `Kanal: ${channel}\nTür: **${btnMeta.label}**\nÜstlen / kapat butonları kanalda.`
+      ),
+    ],
+  });
 }
 
 async function handleTicketClaim(interaction: ButtonInteraction): Promise<void> {
   if (!interaction.channel || !interaction.guild) return;
+  const { yutaOk } = await import("../utils/embeds.js");
   await interaction.reply({
     embeds: [
-      (await import("../utils/embeds.js")).baseEmbed((await import("../utils/embeds.js")).Theme.success)
-        .setAuthor({ name: "TICKET" })
-        .setDescription(`**${interaction.user.tag}** bu ticket'ı üstlendi.`),
+      yutaOk("Üstlendi", `**${interaction.user.tag}** bu ticket ile ilgileniyor.`),
     ],
   });
 }
@@ -259,12 +254,14 @@ async function handleTicketClose(client: YutaClient, interaction: ButtonInteract
       .setStyle(ButtonStyle.Danger),
   );
 
-  const { Theme, baseEmbed, line } = await import("../utils/embeds.js");
+  const { yutaNotice, Theme } = await import("../utils/embeds.js");
   await interaction.reply({
     embeds: [
-      baseEmbed(Theme.warning)
-        .setAuthor({ name: "TICKET" })
-        .setDescription([line(), "Ticket kapatılsın mı? Transcript alınacak.", line()].join("\n")),
+      yutaNotice(
+        "Ticket kapat",
+        "Kapatılsın mı? Transcript log kanalına gider.",
+        Theme.warning
+      ),
     ],
     components: [row],
     ephemeral: true,

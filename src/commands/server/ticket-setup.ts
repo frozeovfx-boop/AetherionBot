@@ -14,7 +14,7 @@ import { randomBytes } from "node:crypto";
 import { Command } from "../../structures/Command.js";
 import type { YutaClient } from "../../client/YutaClient.js";
 import type { TicketButton } from "../../database/GuildSettings.js";
-import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
+import { Theme, baseEmbed, line, kv, code, yutaOk, yutaFail, yutaNotice } from "../../utils/embeds.js";
 
 const STYLE_MAP: Record<TicketButton["style"], ButtonStyle> = {
   Primary: ButtonStyle.Primary,
@@ -167,7 +167,7 @@ export default class TicketSetupCommand extends Command {
       const buttons = [...client.settings.get(gid).ticketButtons];
       if (buttons.length >= 5) {
         await interaction.reply({
-          embeds: [baseEmbed(Theme.warning).setDescription("En fazla 5 buton (Discord satır limiti).")],
+          embeds: [yutaFail("En fazla 5 buton (Discord satır limiti).")],
           ephemeral: true,
         });
         return;
@@ -197,7 +197,7 @@ export default class TicketSetupCommand extends Command {
       const idx = buttons.findIndex((b) => b.id === id);
       if (idx < 0) {
         await interaction.reply({
-          embeds: [baseEmbed(Theme.warning).setDescription("Buton bulunamadı. `/ticket-setup buton-liste`")],
+          embeds: [yutaFail("Buton bulunamadı. `/ticket-setup buton-liste`")],
           ephemeral: true,
         });
         return;
@@ -214,7 +214,7 @@ export default class TicketSetupCommand extends Command {
       const buttons = client.settings.get(gid).ticketButtons.filter((b) => b.id !== id);
       if (buttons.length === client.settings.get(gid).ticketButtons.length) {
         await interaction.reply({
-          embeds: [baseEmbed(Theme.warning).setDescription("Buton bulunamadı.")],
+          embeds: [yutaFail("Buton bulunamadı.")],
           ephemeral: true,
         });
         return;
@@ -261,20 +261,24 @@ export default class TicketSetupCommand extends Command {
 
       const embed = baseEmbed(Theme.primary)
         .setAuthor({
-          name: "TICKET",
+          name: "<:YutaV1:1562125028810555532>  Destek",
           iconURL: interaction.guild.iconURL({ size: 64 }) ?? undefined,
         })
         .setTitle(title.slice(0, 200))
+        .setThumbnail(interaction.guild.iconURL({ size: 256 }))
         .setDescription(
           [
             line(),
             desc.slice(0, 800),
             line(),
-            buttons.map((b) => `• **${b.label}**${b.description ? ` — ${b.description}` : ""}`).join("\n"),
+            "**Seçenekler**",
+            buttons
+              .map((b) => `▸ **${b.label}**${b.description ? ` — ${b.description}` : ""}`)
+              .join("\n"),
             line(),
+            "_Tek açık ticket · gereksiz yere kapatmayın._",
           ].join("\n")
-        )
-        .setFooter({ text: "Yuta" });
+        );
 
       const row = new ActionRowBuilder<ButtonBuilder>();
       for (const b of buttons.slice(0, 5)) {
@@ -289,9 +293,10 @@ export default class TicketSetupCommand extends Command {
       await channel.send({ embeds: [embed], components: [row] });
       await interaction.reply({
         embeds: [
-          baseEmbed(Theme.success)
-            .setAuthor({ name: "TICKET" })
-            .setDescription(`Panel ${channel} · **${buttons.length}** buton`),
+          yutaOk(
+            "Panel gönderildi",
+            `Kanal: ${channel}\nButon: **${buttons.length}**\nÜyeler butona basarak ticket açar.`
+          ),
         ],
         ephemeral: true,
       });
@@ -301,27 +306,21 @@ export default class TicketSetupCommand extends Command {
     const cfg = client.settings.get(gid);
     await interaction.reply({
       embeds: [
-        baseEmbed(Theme.primary)
-          .setAuthor({ name: "TICKET" })
-          .setDescription(
-            [
-              line(),
-              kv("Kategori", cfg.ticketCategoryId ? code(cfg.ticketCategoryId) : code("yok")),
-              kv(
-                "Destek rolü",
-                cfg.ticketSupportRoleId ? `<@&${cfg.ticketSupportRoleId}>` : code("yok")
-              ),
-              kv(
-                "Log",
-                cfg.ticketLogChannelId ? `<#${cfg.ticketLogChannelId}>` : code("yok")
-              ),
-              kv("Butonlar", code(cfg.ticketButtons.length)),
-              line(),
-              cfg.ticketButtons
-                .map((b) => `• ${b.label} (${styleLabel(b.style)})`)
-                .join("\n") || "—",
-            ].join("\n")
-          ),
+        yutaOk(
+          sub === "durum" ? "Ticket durumu" : "Ticket güncellendi",
+          [
+            kv("Kategori", cfg.ticketCategoryId ? `<#${cfg.ticketCategoryId}>` : code("yok")),
+            kv(
+              "Destek",
+              cfg.ticketSupportRoleId ? `<@&${cfg.ticketSupportRoleId}>` : code("yok")
+            ),
+            kv("Log", cfg.ticketLogChannelId ? `<#${cfg.ticketLogChannelId}>` : code("yok")),
+            kv("Buton", code(cfg.ticketButtons.length)),
+            "",
+            cfg.ticketButtons.map((b) => `▸ **${b.label}** · ${styleLabel(b.style)}`).join("\n") ||
+              "—",
+          ].join("\n")
+        ),
       ],
       ephemeral: sub === "durum",
     });
