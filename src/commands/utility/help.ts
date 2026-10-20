@@ -17,43 +17,60 @@ import type { YutaClient } from "../../client/YutaClient.js";
 import { Theme, baseEmbed, line } from "../../utils/embeds.js";
 import { FREE_LIMITS, isGuildPremium } from "../../utils/premium.js";
 
+const V1 = "<:YutaV1:1562125028810555532>";
+
 const CATEGORIES: { id: string; label: string; blurb: string }[] = [
-  { id: "moderation", label: "Moderasyon", blurb: "Ban · warn · case · lock" },
-  { id: "server", label: "Sunucu", blurb: "Ticket · log · welcome · ayar" },
-  { id: "utility", label: "Araçlar", blurb: "Info · premium · snipe" },
-  { id: "economy", label: "Ekonomi", blurb: "Para · work · level" },
-  { id: "music", label: "Müzik", blurb: "Play · queue · filter" },
-  { id: "ai", label: "AI / Conseil", blurb: "Ask · debate · consult" },
+  { id: "moderation", label: "Moderasyon", blurb: "Ban · warn · timeout · case" },
+  { id: "server", label: "Sunucu", blurb: "Ticket · log · welcome · self-role" },
+  { id: "utility", label: "Araçlar", blurb: "Help · premium · info" },
+  { id: "economy", label: "Ekonomi", blurb: "Balance · work · level" },
+  { id: "music", label: "Müzik", blurb: "Play · queue · skip" },
+  { id: "ai", label: "AI", blurb: "Ask · Conseil" },
+];
+
+/** Setup order — what a new server should do first */
+const SETUP_STEPS = [
+  { n: "1", cmd: "/ticket-setup", label: "Ticket paneli" },
+  { n: "2", cmd: "/logset", label: "Log kanalları" },
+  { n: "3", cmd: "/automod", label: "Automod" },
+  { n: "4", cmd: "/setwelcome", label: "Karşılama" },
+  { n: "5", cmd: "/selfrole", label: "Self-role" },
+  { n: "6", cmd: "/ayarlar", label: "Özet kontrol" },
 ];
 
 const SYSTEMS: { label: string; value: string; cmd: string }[] = [
-  { label: "Çekiliş", value: "sys:giveaway", cmd: "/giveaway" },
-  { label: "Automod", value: "sys:automod", cmd: "/automod" },
   { label: "Ticket", value: "sys:ticket", cmd: "/ticket-setup" },
+  { label: "Automod", value: "sys:automod", cmd: "/automod" },
   { label: "Log", value: "sys:log", cmd: "/logset" },
   { label: "Self-role", value: "sys:selfrole", cmd: "/selfrole" },
-  { label: "Özel oda", value: "sys:tempvoice", cmd: "/ozeloda" },
   { label: "Welcome", value: "sys:welcome", cmd: "/setwelcome" },
-  { label: "Stat", value: "sys:stat", cmd: "/stat" },
-  { label: "Davet", value: "sys:invite", cmd: "/davet" },
+  { label: "Çekiliş", value: "sys:giveaway", cmd: "/giveaway" },
+  { label: "Özel oda", value: "sys:tempvoice", cmd: "/ozeloda" },
   { label: "Premium", value: "sys:premium", cmd: "/premium" },
   { label: "Conseil", value: "sys:conseil", cmd: "/conseil" },
   { label: "Ayarlar", value: "sys:ayarlar", cmd: "/ayarlar" },
 ];
 
 const SYS_BODY: Record<string, string> = {
-  "sys:giveaway": "**Çekiliş**\n`/giveaway baslat` · `sans-rol` · Şansım butonu",
-  "sys:automod": "**Automod**\n`/automod` davet · link · spam · küfür",
-  "sys:ticket": "**Ticket**\n`/ticket-setup panel` · buton · destek rolü",
-  "sys:log": "**Log**\n`/logset` mesaj · üye · ses · davet",
-  "sys:selfrole": "**Self-role**\n`/selfrole panel`",
-  "sys:tempvoice": "**Özel oda**\n`/ozeloda` hub",
-  "sys:welcome": "**Welcome**\n`/setwelcome`",
-  "sys:stat": "**Stat**\n`/stat`",
-  "sys:invite": "**Davet**\n`/davet`",
-  "sys:premium": `**Premium**\n\`/premium durum\`\nLimit/gün: ask ${FREE_LIMITS.ask} · debate ${FREE_LIMITS.conseil_debate}`,
-  "sys:conseil": "**Conseil**\n`/conseil` debate · consult · ozet",
-  "sys:ayarlar": "**Ayarlar**\n`/ayarlar` (yetkili)",
+  "sys:ticket":
+    "**Ticket**\n`/ticket-setup panel` — paneli kanala at\n`/ticket-setup buton-ekle` — özel buton + renk\n`/ticket-setup ayar` — kategori · log · destek rolü",
+  "sys:automod":
+    "**Automod**\n`/automod davet` · `link` · `spam` · `kufur`\n`/automod kelime` — liste\n`/automod muaf` — kanal muaf",
+  "sys:log":
+    "**Log**\n`/logset mesaj` · `uye` · `ses` · `davet`\nSilinen mesaj, giriş-çıkış, ses hareketi",
+  "sys:selfrole":
+    "**Self-role**\n`/selfrole panel` — buton veya menü\nKalıcı; restart sonrası çalışır",
+  "sys:welcome":
+    "**Welcome**\n`/setwelcome` — kanal + mesaj\n`{user}` `{server}` `{count}` `{inviter}`",
+  "sys:giveaway":
+    "**Çekiliş**\n`/giveaway baslat` — ödül + süre\n`/giveaway sans-rol` — şans çarpanı\nMesajda **Şansım** butonu",
+  "sys:tempvoice":
+    "**Özel oda**\n`/ozeloda` — hub ses kanalı\nHub’a girenlere geçici oda",
+  "sys:premium": `**Premium**\n\`/premium durum\`\nÜcretsiz/gün · ask **${FREE_LIMITS.ask}** · debate **${FREE_LIMITS.conseil_debate}**\nPremium’da limit kalkar`,
+  "sys:conseil":
+    "**Conseil**\n`/conseil debate` — 2 turlu tartışma\n`/conseil consult` — rapor\n`/ask` — tek soru",
+  "sys:ayarlar":
+    "**Ayarlar**\n`/ayarlar` — sunucu özeti (yetkili)\nPrefix · premium · kanallar",
 };
 
 function publicCommands(client: YutaClient) {
@@ -73,39 +90,52 @@ function homeEmbed(client: YutaClient, guildId: string | null): EmbedBuilder {
   const prem = guildId ? isGuildPremium(client, guildId) : false;
   const total = publicCommands(client).length;
 
+  const setupBlock = SETUP_STEPS.map((s) => `\`${s.n}\` ${s.cmd} — **${s.label}**`).join("\n");
+
   const catBlock = CATEGORIES.filter((c) => counts.has(c.id))
     .map((c) => {
       const n = counts.get(c.id) ?? 0;
-      return `\` ${String(n).padStart(2, " ")} \`  **${c.label}**`;
+      return `**${c.label}** · \`${n}\`\n　${c.blurb}`;
     })
-    .join("\n");
+    .join("\n\n");
 
-  // two-column-ish systems list
-  const sysLeft: string[] = [];
-  const sysRight: string[] = [];
-  SYSTEMS.forEach((s, i) => {
-    const line = `\`${s.cmd}\``;
-    if (i % 2 === 0) sysLeft.push(line);
-    else sysRight.push(line);
-  });
-  const sysBlock = SYSTEMS.map((s) => `\`${s.cmd}\` **${s.label}**`).join("\n");
+  const sysBlock = SYSTEMS.map((s) => `• \`${s.cmd}\` **${s.label}**`).join("\n");
 
   return baseEmbed(Theme.primary)
     .setAuthor({
-      name: "<:YutaV1:1562125028810555532> Yuta Komutlar",
+      name: `${V1}  Yuta`,
       iconURL: client.user?.displayAvatarURL({ size: 128 }) ?? undefined,
     })
+    .setTitle("Komut merkezi")
+    .setThumbnail(client.user?.displayAvatarURL({ size: 256 }) ?? null)
     .setDescription(
       [
-        "**Kategoriler**",
-        catBlock,
-        "",
-        "**Sistemler**",
-        sysBlock,
-        "",
         line(),
-        `**${total}** komut  ·  ${prem ? "Premium" : "Free"}`,
+        "Sunucunu **sırayla** kur, sonra kategoriden komut seç.",
+        line(),
       ].join("\n")
+    )
+    .addFields(
+      {
+        name: "Kurulum",
+        value: setupBlock,
+        inline: false,
+      },
+      {
+        name: "Kategoriler",
+        value: catBlock.slice(0, 1020) || "—",
+        inline: true,
+      },
+      {
+        name: "Sistemler",
+        value: sysBlock.slice(0, 1020),
+        inline: true,
+      },
+      {
+        name: "Durum",
+        value: `**${total}** komut · ${prem ? "**Premium**" : "Free"} · \`${Theme.footer}\``.slice(0, 200),
+        inline: false,
+      }
     );
 }
 
@@ -118,40 +148,40 @@ function categoryEmbed(client: YutaClient, categoryId: string): EmbedBuilder {
   const list =
     commands.length === 0
       ? "—"
-      : commands.map((c) => `\`/${c.name}\`  ${c.description}`).join("\n");
+      : commands.map((c) => `\`/${c.name}\`\n　${c.description}`).join("\n\n");
 
   return baseEmbed(Theme.primary)
-    .setAuthor({ name: meta?.label ?? categoryId })
-    .setDescription([list.slice(0, 3800)].join("\n"))
-    .setFooter({ text: `${commands.length} komut` });
+    .setAuthor({ name: `${V1}  ${meta?.label ?? categoryId}` })
+    .setDescription([line(), list.slice(0, 3800), line()].join("\n"))
+    .setFooter({ text: `${commands.length} komut · menüden geri dön` });
 }
 
 function systemEmbed(value: string): EmbedBuilder {
-  const title = SYSTEMS.find((s) => s.value === value)?.label ?? "Sistem";
+  const meta = SYSTEMS.find((s) => s.value === value);
   return baseEmbed(Theme.primary)
-    .setAuthor({ name: title })
-    .setDescription(SYS_BODY[value] ?? "—");
+    .setAuthor({ name: `${V1}  ${meta?.label ?? "Sistem"}` })
+    .setDescription([line(), SYS_BODY[value] ?? "—", line()].join("\n"))
+    .setFooter({ text: meta?.cmd ?? "Yuta" });
 }
 
-
-/** Turkish / alias expand for better hits */
+/** Turkish aliases for search */
 const SEARCH_ALIASES: Record<string, string[]> = {
   ban: ["ban", "yasak"],
   kick: ["kick", "at"],
   mute: ["timeout", "mute", "sustur"],
   ticket: ["ticket", "destek", "ticket-setup"],
-  cekilis: ["giveaway", "çekiliş", "cekilis"],
-  çekiliş: ["giveaway", "çekiliş"],
+  cekilis: ["giveaway", "çekiliş"],
+  çekiliş: ["giveaway"],
   giveaway: ["giveaway"],
-  muzik: ["play", "music", "queue", "skip", "filter"],
-  müzik: ["play", "music", "queue", "skip"],
-  para: ["balance", "work", "daily", "economy", "pay"],
-  level: ["level", "rank", "xp"],
-  ai: ["ask", "conseil", "ai"],
+  muzik: ["play", "music", "queue", "skip"],
+  müzik: ["play", "queue", "skip"],
+  para: ["balance", "work", "daily", "level"],
+  ai: ["ask", "conseil"],
   premium: ["premium"],
   log: ["logset", "log"],
-  rol: ["selfrole", "addrole", "role"],
-  oda: ["ozeloda", "tempvoice", "voice"],
+  rol: ["selfrole", "addrole"],
+  oda: ["ozeloda"],
+  kurulum: ["ticket-setup", "logset", "automod", "setwelcome", "selfrole"],
 };
 
 function expandQuery(raw: string): string[] {
@@ -167,12 +197,7 @@ function expandQuery(raw: string): string[] {
   return [...parts];
 }
 
-function scoreCommand(
-  name: string,
-  description: string,
-  category: string,
-  terms: string[]
-): number {
+function scoreCommand(name: string, description: string, category: string, terms: string[]): number {
   const n = name.toLowerCase();
   const d = description.toLowerCase();
   const c = category.toLowerCase();
@@ -189,10 +214,8 @@ function scoreCommand(
 
 function searchEmbed(client: YutaClient, query: string): EmbedBuilder {
   const terms = expandQuery(query);
-  if (terms.length === 0) {
-    return baseEmbed(Theme.primary)
-      .setAuthor({ name: "Arama" })
-      .setDescription("Boş arama.");
+  if (!terms.length) {
+    return baseEmbed(Theme.primary).setAuthor({ name: `${V1} Arama` }).setDescription("Boş arama.");
   }
 
   const ranked = publicCommands(client)
@@ -202,24 +225,20 @@ function searchEmbed(client: YutaClient, query: string): EmbedBuilder {
     }))
     .filter((x) => x.score > 0)
     .sort((a, b) => b.score - a.score || a.c.name.localeCompare(b.c.name))
-    .slice(0, 20);
+    .slice(0, 18);
 
   const sysHits = SYSTEMS.filter((s) => {
     const blob = `${s.label} ${s.cmd} ${s.value}`.toLowerCase();
     return terms.some((t) => blob.includes(t));
   }).slice(0, 6);
 
-  if (ranked.length === 0 && sysHits.length === 0) {
+  if (!ranked.length && !sysHits.length) {
     return baseEmbed(Theme.primary)
-      .setAuthor({ name: "🔍 Arama" })
+      .setAuthor({ name: `${V1} Arama` })
       .setDescription(
-        [
-          line(),
-          `**\`${query}\`** · sonuç yok`,
-          "",
-          "Dene: `ban` · `ticket` · `müzik` · `premium`",
-          line(),
-        ].join("\n")
+        [line(), `**\`${query}\`** · sonuç yok`, "", "Dene: `ticket` · `ban` · `kurulum` · `müzik`", line()].join(
+          "\n"
+        )
       );
   }
 
@@ -231,7 +250,6 @@ function searchEmbed(client: YutaClient, query: string): EmbedBuilder {
   }
 
   const catLabel = (id: string) => CATEGORIES.find((x) => x.id === id)?.label ?? id;
-
   const blocks: string[] = [];
   for (const [cat, list] of byCat) {
     blocks.push(`**${catLabel(cat)}**`);
@@ -240,25 +258,19 @@ function searchEmbed(client: YutaClient, query: string): EmbedBuilder {
     }
     blocks.push("");
   }
-
   if (sysHits.length) {
     blocks.push("**Sistem**");
-    for (const s of sysHits) {
-      blocks.push(`\`${s.cmd}\` — ${s.label}`);
-    }
+    for (const s of sysHits) blocks.push(`\`${s.cmd}\` — ${s.label}`);
   }
 
   let body = blocks.join("\n").trim();
-  if (body.length > 3800) body = body.slice(0, 3790) + "\n…";
+  if (body.length > 3800) body = `${body.slice(0, 3790)}\n…`;
 
   return baseEmbed(Theme.primary)
-    .setAuthor({ name: "🔍 Arama" })
+    .setAuthor({ name: `${V1} Arama` })
     .setDescription([line(), body, line()].join("\n"))
-    .setFooter({
-      text: `${ranked.length} komut · ${sysHits.length} sistem · ${query.slice(0, 32)}`,
-    });
+    .setFooter({ text: `${ranked.length} komut · ${sysHits.length} sistem · ${query.slice(0, 28)}` });
 }
-
 
 function buildRows(client: YutaClient): ActionRowBuilder[] {
   const counts = countMap(client);
@@ -267,10 +279,7 @@ function buildRows(client: YutaClient): ActionRowBuilder[] {
     .setCustomId("help_cat")
     .setPlaceholder("Kategoriler")
     .addOptions(
-      new StringSelectMenuOptionBuilder()
-        .setLabel("Ana menü")
-        .setDescription("Özet")
-        .setValue("home"),
+      new StringSelectMenuOptionBuilder().setLabel("Ana menü").setDescription("Kurulum + özet").setValue("home"),
       ...CATEGORIES.filter((c) => counts.has(c.id)).map((c) =>
         new StringSelectMenuOptionBuilder()
           .setLabel(c.label)
@@ -281,30 +290,18 @@ function buildRows(client: YutaClient): ActionRowBuilder[] {
 
   const sysMenu = new StringSelectMenuBuilder()
     .setCustomId("help_sys")
-    .setPlaceholder("Sistemler")
+    .setPlaceholder("Sistemler — ticket, log, automod…")
     .addOptions(
       SYSTEMS.map((s) =>
-        new StringSelectMenuOptionBuilder()
-          .setLabel(s.label)
-          .setDescription(s.cmd)
-          .setValue(s.value)
+        new StringSelectMenuOptionBuilder().setLabel(s.label).setDescription(s.cmd).setValue(s.value)
       )
     );
 
   const nav = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setCustomId("help_search")
-      .setLabel("Ara")
-      .setEmoji("🔍")
-      .setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder()
-      .setCustomId("help_home")
-      .setLabel("Ana menü")
-      .setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder()
-      .setCustomId("help_premium")
-      .setLabel("Premium")
-      .setStyle(ButtonStyle.Primary)
+    new ButtonBuilder().setCustomId("help_search").setLabel("Ara").setEmoji("🔍").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId("help_home").setLabel("Ana menü").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId("help_setup").setLabel("Kurulum").setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId("help_premium").setLabel("Premium").setStyle(ButtonStyle.Primary)
   );
 
   return [
@@ -314,17 +311,22 @@ function buildRows(client: YutaClient): ActionRowBuilder[] {
   ];
 }
 
+function setupOnlyEmbed(): EmbedBuilder {
+  const setupBlock = SETUP_STEPS.map((s) => `**${s.n}.** \`${s.cmd}\`\n　${s.label}`).join("\n\n");
+  return baseEmbed(Theme.primary)
+    .setAuthor({ name: `${V1} Kurulum` })
+    .setTitle("Sırayla yap")
+    .setDescription([line(), setupBlock, line(), "Yetkili hesabınla bu komutları kullan.", line()].join("\n"));
+}
+
 export default class HelpCommand extends Command {
   constructor() {
     super({
       name: "help",
-      description: "Komut menüsü",
+      description: "Komut merkezi",
       category: "utility",
       cooldown: 5,
-      data: new SlashCommandBuilder()
-        .setName("help")
-        .setDescription("Komut menüsü")
-        .toJSON(),
+      data: new SlashCommandBuilder().setName("help").setDescription("Komut merkezi").toJSON(),
     });
   }
 
@@ -348,16 +350,15 @@ export default class HelpCommand extends Command {
             const modalId = `help_search_modal:${interaction.id}`;
             const modal = new ModalBuilder()
               .setCustomId(modalId)
-              .setTitle("<:YutaV1:1562125028810555532> Ara")
+              .setTitle("Yuta · Ara")
               .addComponents(
                 new ActionRowBuilder<TextInputBuilder>().addComponents(
                   new TextInputBuilder()
                     .setCustomId("q")
                     .setLabel("Ne arıyorsun?")
                     .setStyle(TextInputStyle.Short)
-                    .setPlaceholder("ban · ticket · müzik · premium")
+                    .setPlaceholder("ticket · ban · kurulum · müzik")
                     .setRequired(true)
-                    .setMinLength(1)
                     .setMaxLength(48)
                 )
               );
@@ -367,9 +368,8 @@ export default class HelpCommand extends Command {
                 time: 120_000,
                 filter: (m) => m.customId === modalId && m.user.id === interaction.user.id,
               });
-              const q = sub.fields.getTextInputValue("q");
               await sub.update({
-                embeds: [searchEmbed(client, q)],
+                embeds: [searchEmbed(client, sub.fields.getTextInputValue("q"))],
                 components: rows,
               });
             } catch {
@@ -378,17 +378,15 @@ export default class HelpCommand extends Command {
             return;
           }
           if (i.customId === "help_home") {
-            await i.update({
-              embeds: [homeEmbed(client, interaction.guildId)],
-              components: rows,
-            });
+            await i.update({ embeds: [homeEmbed(client, interaction.guildId)], components: rows });
+            return;
+          }
+          if (i.customId === "help_setup") {
+            await i.update({ embeds: [setupOnlyEmbed()], components: rows });
             return;
           }
           if (i.customId === "help_premium") {
-            await i.update({
-              embeds: [systemEmbed("sys:premium")],
-              components: rows,
-            });
+            await i.update({ embeds: [systemEmbed("sys:premium")], components: rows });
             return;
           }
         }
@@ -396,9 +394,7 @@ export default class HelpCommand extends Command {
           const v = i.values[0]!;
           if (i.customId === "help_cat") {
             const embed =
-              v === "home"
-                ? homeEmbed(client, interaction.guildId)
-                : categoryEmbed(client, v);
+              v === "home" ? homeEmbed(client, interaction.guildId) : categoryEmbed(client, v);
             await i.update({ embeds: [embed], components: rows });
             return;
           }
