@@ -92,7 +92,7 @@ function homeEmbed(client: YutaClient, guildId: string | null): EmbedBuilder {
 
   return baseEmbed(Theme.primary)
     .setAuthor({
-      name: "Yuta Komutlar",
+      name: "<:YutaV1:1562125028810555532> Yuta Komutlar",
       iconURL: client.user?.displayAvatarURL({ size: 128 }) ?? undefined,
     })
     .setDescription(
@@ -348,7 +348,7 @@ export default class HelpCommand extends Command {
             const modalId = `help_search_modal:${interaction.id}`;
             const modal = new ModalBuilder()
               .setCustomId(modalId)
-              .setTitle("Yuta · Ara")
+              .setTitle("<:YutaV1:1562125028810555532> Ara")
               .addComponents(
                 new ActionRowBuilder<TextInputBuilder>().addComponents(
                   new TextInputBuilder()

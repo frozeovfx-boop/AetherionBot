@@ -23,7 +23,7 @@ export const Theme = {
   economy: 0x8918f5 as ColorResolvable,
   music: 0xa855f7 as ColorResolvable,
   mod: 0xe11d48 as ColorResolvable,
-  footer: "Yuta",
+  footer: "<:YutaV1:1562125028810555532> Yuta · v1",
 } as const;
 
 export function baseEmbed(color: ColorResolvable = Theme.primary): EmbedBuilder {
@@ -98,7 +98,7 @@ export function bar(ratio: number, size = 12): string {
 export const ConseilTheme = {
   cyan: 0x8918f5 as ColorResolvable,
   purple: 0x8918f5 as ColorResolvable,
-  footer: "Yuta · Conseil",
+  footer: "<:YutaV1:1562125028810555532> Yuta · Conseil",
 } as const;
 
 export function conseilEmbed(color: ColorResolvable = ConseilTheme.purple): EmbedBuilder {
@@ -147,7 +147,7 @@ export function yutaMod(opts: {
     .setTitle(opts.title)
     .setDescription(rows.join("\n"));
   if (opts.targetAvatar) e.setThumbnail(opts.targetAvatar);
-  if (opts.caseId != null) e.setFooter({ text: `Case #${opts.caseId} · Yuta` });
+  if (opts.caseId != null) e.setFooter({ text: `Case #${opts.caseId} · <:YutaV1:1562125028810555532> Yuta · v1` });
   return e;
 }
 
