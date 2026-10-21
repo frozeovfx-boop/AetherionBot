@@ -265,53 +265,21 @@ function homeEmbed(client: YutaClient, guildId: string | null): EmbedBuilder {
   const prem = guildId ? isGuildPremium(client, guildId) : false;
   const total = publicCommands(client).length;
 
-  const setupBlock = SETUP_STEPS.map((s) => `\`${s.n}\` ${s.cmd} — **${s.label}**`).join("\n");
-
-  const catBlock = CATEGORIES.filter((c) => counts.has(c.id))
-    .map((c) => {
-      const n = counts.get(c.id) ?? 0;
-      return `**${c.label}** · \`${n}\`\n　${c.blurb}`;
-    })
-    .join("\n\n");
-
-  const sysBlock = SYSTEMS.map((s) => `• \`${s.cmd}\` **${s.label}**`).join("\n");
+  const cats = CATEGORIES.filter((c) => counts.has(c.id))
+    .map((c) => `**${c.label}** · \`${counts.get(c.id)}\``)
+    .join("\n");
 
   return baseEmbed(Theme.primary)
     .setAuthor({
-      name: `${V1}  Yuta`,
+      name: "Yuta",
       iconURL: client.user?.displayAvatarURL({ size: 128 }) ?? undefined,
     })
-    .setTitle("Komut merkezi")
+    .setTitle("Komutlar")
     .setThumbnail(client.user?.displayAvatarURL({ size: 256 }) ?? null)
-    .setDescription(
-      [
-        line(),
-        "Sunucunu **sırayla** kur, sonra kategoriden komut seç.",
-        line(),
-      ].join("\n")
-    )
-    .addFields(
-      {
-        name: "Kurulum",
-        value: setupBlock,
-        inline: false,
-      },
-      {
-        name: "Kategoriler",
-        value: catBlock.slice(0, 1020) || "—",
-        inline: true,
-      },
-      {
-        name: "Sistemler",
-        value: sysBlock.slice(0, 1020),
-        inline: true,
-      },
-      {
-        name: "Durum",
-        value: `**${total}** komut · ${prem ? "**Premium**" : "Free"} · \`${Theme.footer}\``.slice(0, 200),
-        inline: false,
-      }
-    );
+    .setDescription(cats)
+    .setFooter({
+      text: `${total} komut · ${prem ? "Premium" : "Free"} · menüden seç`,
+    });
 }
 
 function categoryEmbed(client: YutaClient, categoryId: string): EmbedBuilder {
@@ -323,34 +291,19 @@ function categoryEmbed(client: YutaClient, categoryId: string): EmbedBuilder {
   const list =
     commands.length === 0
       ? "—"
-      : commands.map((c) => `\`/${c.name}\`\n　${c.description}`).join("\n\n");
+      : commands.map((c) => `\`/${c.name}\` — ${c.description}`).join("\n");
 
   return baseEmbed(Theme.primary)
-    .setAuthor({ name: `${V1}  ${meta?.label ?? categoryId}` })
-    .setDescription([line(), list.slice(0, 3800), line()].join("\n"))
-    .setFooter({
-      text:
-        categoryId === "server"
-          ? `${commands.length} komut · altta kurulum butonları`
-          : `${commands.length} komut · menüden geri dön`,
-    });
+    .setAuthor({ name: meta?.label ?? categoryId })
+    .setDescription(list.slice(0, 3900))
+    .setFooter({ text: `${commands.length} komut` });
 }
 
 function systemEmbed(value: string): EmbedBuilder {
   const meta = SYSTEMS.find((s) => s.value === value);
-  const hasGuide = Boolean(SETUP_GUIDES[value]);
   return baseEmbed(Theme.primary)
-    .setAuthor({ name: `${V1}  ${meta?.label ?? "Sistem"}` })
-    .setDescription(
-      [
-        line(),
-        SYS_BODY[value] ?? "—",
-        line(),
-        hasGuide ? "_Alttaki yeşil butonlarla kurulum adımlarına bak._" : "",
-      ]
-        .filter(Boolean)
-        .join("\n")
-    )
+    .setAuthor({ name: meta?.label ?? "Sistem" })
+    .setDescription(SYS_BODY[value] ?? "—")
     .setFooter({ text: meta?.cmd ?? "Yuta" });
 }
 
@@ -469,7 +422,7 @@ function buildRows(client: YutaClient, focusSys?: string | null): ActionRowBuild
     .setCustomId("help_cat")
     .setPlaceholder("Kategoriler")
     .addOptions(
-      new StringSelectMenuOptionBuilder().setLabel("Ana menü").setDescription("Kurulum + özet").setValue("home"),
+      new StringSelectMenuOptionBuilder().setLabel("Ana menü").setDescription("Ana sayfa").setValue("home"),
       ...CATEGORIES.filter((c) => counts.has(c.id)).map((c) =>
         new StringSelectMenuOptionBuilder()
           .setLabel(c.label)
@@ -489,9 +442,7 @@ function buildRows(client: YutaClient, focusSys?: string | null): ActionRowBuild
 
   const nav = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder().setCustomId("help_search").setLabel("Ara").setEmoji("🔍").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId("help_home").setLabel("Ana menü").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId("help_setup").setLabel("Kurulum").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId("help_premium").setLabel("Premium").setStyle(ButtonStyle.Primary)
+    new ButtonBuilder().setCustomId("help_home").setLabel("Ana menü").setStyle(ButtonStyle.Secondary)
   );
 
   const rows: ActionRowBuilder[] = [
@@ -593,20 +544,8 @@ export default class HelpCommand extends Command {
             });
             return;
           }
-          if (i.customId === "help_setup") {
-            await i.update({
-              embeds: [setupOnlyEmbed()],
-              components: buildRows(client, "sys:ticket"),
-            });
-            return;
-          }
-          if (i.customId === "help_premium") {
-            await i.update({
-              embeds: [systemEmbed("sys:premium")],
-              components: buildRows(client, "sys:premium"),
-            });
-            return;
-          }
+          
+          
           if (i.customId.startsWith("help_guide:")) {
             const parts = i.customId.split(":");
             const sysKey = `${parts[1]}:${parts[2]}`;
