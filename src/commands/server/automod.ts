@@ -7,7 +7,7 @@ import {
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { YutaClient } from "../../client/YutaClient.js";
-import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
+import { Theme, baseEmbed, line, kv, code, yutaOk, yutaFail } from "../../utils/embeds.js";
 
 function onOff(v: boolean): string {
   return v ? "**Açık**" : code("kapalı");
@@ -126,18 +126,14 @@ export default class AutomodCommand extends Command {
       if (islem === "liste") {
         await interaction.reply({
           embeds: [
-            baseEmbed(Theme.primary)
-              .setAuthor({ name: "AUTOMOD · KELİMELER" })
-              .setDescription(
-                [line(), list.length ? list.map((w) => code(w)).join(", ") : "Boş", line()].join("\n")
-              ),
+            yutaOk("Yasak kelimeler", list.length ? list.map((w) => code(w)).join(", ") : code("boş")),
           ],
           ephemeral: true,
         });
         return;
       }
       if (!metin) {
-        await interaction.reply({ content: "metin gerekli.", ephemeral: true });
+        await interaction.reply({ embeds: [yutaFail("Kelime metni gerekli.")], ephemeral: true });
         return;
       }
       if (islem === "ekle" && !list.includes(metin)) list.push(metin.slice(0, 40));
@@ -153,22 +149,14 @@ export default class AutomodCommand extends Command {
       if (islem === "liste") {
         await interaction.reply({
           embeds: [
-            baseEmbed(Theme.primary)
-              .setAuthor({ name: "AUTOMOD · MUAF" })
-              .setDescription(
-                [
-                  line(),
-                  list.length ? list.map((id) => `<#${id}>`).join(" ") : "Yok",
-                  line(),
-                ].join("\n")
-              ),
+            yutaOk("Muaf kanallar", list.length ? list.map((id) => `<#${id}>`).join(" ") : code("yok")),
           ],
           ephemeral: true,
         });
         return;
       }
       if (!ch) {
-        await interaction.reply({ content: "kanal seç.", ephemeral: true });
+        await interaction.reply({ embeds: [yutaFail("Kanal seç.")], ephemeral: true });
         return;
       }
       if (islem === "ekle" && !list.includes(ch.id)) list.push(ch.id);
@@ -182,22 +170,20 @@ export default class AutomodCommand extends Command {
     const cfg = client.settings.get(gid);
     await interaction.reply({
       embeds: [
-        baseEmbed(Theme.primary)
-          .setAuthor({ name: "AUTOMOD" })
-          .setDescription(
-            [
-              line(),
-              kv("Davet", onOff(cfg.automodAntiInvite)),
-              kv("Link", onOff(cfg.automodAntiLink)),
-              kv("Spam", onOff(cfg.automodAntiSpam)),
-              kv("Küfür", onOff(cfg.automodAntiBadwords)),
-              kv("Mention", cfg.automodMaxMentions === 0 ? code("kapalı") : code(cfg.automodMaxMentions)),
-              kv("Yasak kelime", code(cfg.automodBadwords.length)),
-              kv("Muaf kanal", code(cfg.automodIgnoreChannels.length)),
-              line(),
-              "Mod/Admin muaf · işlemler modlog’a düşer",
-            ].join("\n")
-          ),
+        yutaOk(
+          "Automod",
+          [
+            kv("Davet", onOff(cfg.automodAntiInvite)),
+            kv("Link", onOff(cfg.automodAntiLink)),
+            kv("Spam", onOff(cfg.automodAntiSpam)),
+            kv("Küfür", onOff(cfg.automodAntiBadwords)),
+            kv("Mention", cfg.automodMaxMentions === 0 ? code("kapalı") : code(cfg.automodMaxMentions)),
+            kv("Yasak kelime", code(cfg.automodBadwords.length)),
+            kv("Muaf kanal", code(cfg.automodIgnoreChannels.length)),
+            "",
+            "Mod/Admin muaf · işlemler modlog’a düşer",
+          ].join("\n")
+        ),
       ],
     });
   }

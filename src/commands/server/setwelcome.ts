@@ -7,7 +7,7 @@ import {
 } from "discord.js";
 import { Command } from "../../structures/Command.js";
 import type { YutaClient } from "../../client/YutaClient.js";
-import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
+import { code, kv, yutaOk } from "../../utils/embeds.js";
 
 export default class SetwelcomeCommand extends Command {
   constructor() {
@@ -74,20 +74,14 @@ export default class SetwelcomeCommand extends Command {
     }
 
     const cfg = client.settings.get(interaction.guild.id);
-    const embed = baseEmbed(Theme.success)
-      .setAuthor({ name: "SERVER" })
-      .setTitle("Welcome")
-      .setDescription(
-        [
-          line(),
-          kv("Kanal", cfg.welcomeChannelId ? `<#${cfg.welcomeChannelId}>` : "Kapalı"),
-          kv("Hoş geldin", cfg.welcomeMessage.slice(0, 140)),
-          kv("Ayrılış", cfg.leaveMessage.slice(0, 140)),
-          line(),
-          `Değişkenler: ${code("{user}")} ${code("{server}")} ${code("{count}")}`,
-        ].join("\n")
-      );
+    const body = [
+      kv("Kanal", cfg.welcomeChannelId ? `<#${cfg.welcomeChannelId}>` : code("kapalı")),
+      kv("Mesaj", code((cfg.welcomeMessage || "varsayılan").slice(0, 80))),
+      kv("Ayrılış", code((cfg.leaveMessage || "varsayılan").slice(0, 80))),
+      "",
+      "`{user}` `{server}` `{count}` `{inviter}`",
+    ].join("\n");
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.reply({ embeds: [yutaOk("Welcome", body)] });
   }
 }

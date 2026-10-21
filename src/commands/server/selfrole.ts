@@ -14,7 +14,7 @@ import { randomBytes } from "node:crypto";
 import { Command } from "../../structures/Command.js";
 import type { YutaClient } from "../../client/YutaClient.js";
 import type { SelfRoleEntry } from "../../database/SelfRoleManager.js";
-import { Theme, baseEmbed, line, kv, code } from "../../utils/embeds.js";
+import { Theme, baseEmbed, line, kv, code, yutaOk, yutaFail } from "../../utils/embeds.js";
 
 function parseRoleList(
   interaction: ChatInputCommandInteraction,
@@ -185,7 +185,7 @@ export default class SelfroleCommand extends Command {
       const list = client.selfroles.list(interaction.guild.id);
       if (!list.length) {
         await interaction.reply({
-          embeds: [baseEmbed(Theme.mute).setDescription("Panel yok. `/selfrole panel`")],
+          embeds: [yutaFail("Panel yok. `/selfrole panel`")],
           ephemeral: true,
         });
         return;
@@ -210,7 +210,7 @@ export default class SelfroleCommand extends Command {
       const panel = client.selfroles.get(id);
       if (!panel || panel.guildId !== interaction.guild.id) {
         await interaction.reply({
-          embeds: [baseEmbed(Theme.warning).setDescription("Panel bulunamadı.")],
+          embeds: [yutaFail("Panel bulunamadı.")],
           ephemeral: true,
         });
         return;
@@ -240,7 +240,7 @@ export default class SelfroleCommand extends Command {
     const parsed = parseRoleList(interaction, rawRoles);
     if (!parsed.ok) {
       await interaction.reply({
-        embeds: [baseEmbed(Theme.warning).setDescription(parsed.error)],
+        embeds: [yutaFail(parsed.error)],
         ephemeral: true,
       });
       return;
@@ -249,7 +249,7 @@ export default class SelfroleCommand extends Command {
     const me = interaction.guild.members.me;
     if (!me?.permissions.has(PermissionFlagsBits.ManageRoles)) {
       await interaction.reply({
-        embeds: [baseEmbed(Theme.warning).setDescription("Botun Manage Roles yetkisi yok.")],
+        embeds: [yutaFail("Botun Manage Roles yetkisi yok.")],
         ephemeral: true,
       });
       return;
@@ -260,9 +260,7 @@ export default class SelfroleCommand extends Command {
       if (role && me.roles.highest.position <= role.position) {
         await interaction.reply({
           embeds: [
-            baseEmbed(Theme.warning).setDescription(
-              `Bot rolü yetersiz: **${role.name}**. Bot rolünü yukarı taşı.`
-            ),
+            yutaFail(`Bot rolü yetersiz: **${role.name}**. Bot rolünü yukarı taşı.`),
           ],
           ephemeral: true,
         });
@@ -272,18 +270,12 @@ export default class SelfroleCommand extends Command {
 
     const panelId = randomBytes(4).toString("hex");
     const embed = baseEmbed(Theme.primary)
-      .setAuthor({ name: "SELF-ROLE" })
+      .setAuthor({ name: "Yuta · Self-role" })
       .setTitle(title.slice(0, 200))
       .setDescription(
-        [
-          line(),
-          description.slice(0, 1000),
-          line(),
-          parsed.roles.map((r) => `• **${r.label}**`).join("\n"),
-          line(),
-        ].join("\n")
+        [description.slice(0, 1000), "", parsed.roles.map((r) => `▸ **${r.label}**`).join("\n")].join("\n")
       )
-      .setFooter({ text: `ID ${panelId} · Yuta` });
+      .setFooter({ text: `ID ${panelId} · Yuta · v1` });
 
     const components = buildComponents(panelId, mode, parsed.roles);
     const msg = await channel.send({ embeds: [embed], components });
@@ -302,18 +294,15 @@ export default class SelfroleCommand extends Command {
 
     await interaction.reply({
       embeds: [
-        baseEmbed(Theme.success)
-          .setAuthor({ name: "SELF-ROLE" })
-          .setDescription(
-            [
-              line(),
-              kv("Panel", code(panelId)),
-              kv("Mod", mode),
-              kv("Kanal", `${channel}`),
-              kv("Rol", code(parsed.roles.length)),
-              line(),
-            ].join("\n")
-          ),
+        yutaOk(
+          "Self-role panel",
+          [
+            kv("Panel", code(panelId)),
+            kv("Mod", mode),
+            kv("Kanal", `${channel}`),
+            kv("Rol", code(parsed.roles.length)),
+          ].join("\n")
+        ),
       ],
       ephemeral: true,
     });
