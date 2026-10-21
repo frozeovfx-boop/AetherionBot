@@ -67,7 +67,7 @@ export class YutaClient extends Client {
   }
 
   public async start(): Promise<void> {
-    this.logger.info("Starting Megumi...");
+    this.logger.info("boot   Yuta");
     await this.login(config.DISCORD_TOKEN);
   }
 }

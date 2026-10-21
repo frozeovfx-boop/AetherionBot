@@ -53,11 +53,11 @@ export class MusicManager {
     this.lavalinkReady = ok;
 
     if (ok) {
-      logger.info(`Lavalink REST ok → ${config.LAVALINK_HOST}:${config.LAVALINK_PORT}`);
+      logger.info(`music  lavalink ${config.LAVALINK_HOST}:${config.LAVALINK_PORT}`);
       await this.initLavalinkClient();
     } else {
       logger.warn(
-        `Lavalink offline (${config.LAVALINK_HOST}:${config.LAVALINK_PORT}) — queue/metadata only`
+        `music  offline (queue only)`
       );
       setInterval(() => void this.tryReconnect(), 60_000);
     }

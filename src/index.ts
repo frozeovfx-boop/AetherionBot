@@ -26,13 +26,13 @@ async function main() {
     await client.giveaways.init();
     await client.tempbans.init();
     await client.usage.init();
-    logger.info("Stores ready: economy · cases · inventory · guilds · seen · capsules · aura · birthdays · stats");
+    logger.info("store  ok");
 
     await loadEvents(client);
     await loadCommands(client);
     await client.start();
   } catch (error) {
-    logger.fatal(error, "Failed to start Megumi");
+    logger.fatal(error, "Failed to start Yuta");
     process.exit(1);
   }
 }
