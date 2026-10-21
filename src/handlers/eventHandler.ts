@@ -46,11 +46,11 @@ export async function loadEvents(client: YutaClient): Promise<void> {
       }
 
       loaded++;
-      logger.info(`Event bound: ${String(event.name)}`);
+      logger.debug(`Event bound: ${String(event.name)}`);
     } catch (err) {
       logger.warn({ err, file }, "Failed to load event");
     }
   }
 
-  logger.info(`Loaded ${loaded} events`);
+  logger.info(`event  ${loaded}`);
 }

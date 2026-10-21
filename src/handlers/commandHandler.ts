@@ -45,5 +45,5 @@ export async function loadCommands(client: YutaClient): Promise<void> {
     }
   }
 
-  logger.info(`Loaded ${loaded} commands`);
+  logger.info(`cmd    ${loaded}`);
 }

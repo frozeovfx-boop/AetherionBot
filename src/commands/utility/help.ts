@@ -518,14 +518,13 @@ function buildRows(client: YutaClient, focusSys?: string | null): ActionRowBuild
 }
 
 function setupOnlyEmbed(): EmbedBuilder {
-  const setupBlock = SETUP_STEPS.map((s) => `**${s.n}.** \`${s.cmd}\`
-${s.label}`).join("\n");
+  const setupBlock = SETUP_STEPS.map(
+    (s) => "**" + s.n + ".** `" + s.cmd + "`\n" + s.label
+  ).join("\n\n");
   return baseEmbed(Theme.primary)
     .setAuthor({ name: `${V1} · Kurulum` })
     .setTitle("Sırayla yap")
-    .setDescription(setupBlock + "
-
-Yetkili hesap gerekli.")
+    .setDescription(setupBlock + "\n\nYetkili hesap gerekli.")
     .setFooter({ text: "Alttan ticket adımlarına geç" });
 }
 
